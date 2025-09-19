@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Specific User Cards</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test Specific User Cards</h1>
+    <button id="testBtn">Test Specific User Cards</button>
+    <div id="result"></div>
+
+    <script>
+        const supabaseUrl = 'http://127.0.0.1:54321';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // User ID from the main app logs
+        const APP_USER_ID = 'e968a5f3-d93c-4eef-b0ad-18ad21f55c59';
+        
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Sign in anonymously first
+                const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+                
+                if (authError) {
+                    resultDiv.innerHTML = `Auth Error: ${authError.message}`;
+                    return;
+                }
+                
+                resultDiv.innerHTML = `Auth Success! Current User ID: ${authData.user.id}<br>`;
+                resultDiv.innerHTML += `Testing with App User ID: ${APP_USER_ID}<br>`;
+                
+                // Test 1: Check user_cards for the app user
+                resultDiv.innerHTML += '<br>Test 1: Checking user_cards for app user...<br>';
+                const { data: userCards, error: userCardsError } = await supabase
+                    .from('user_cards')
+                    .select('*')
+                    .eq('user_id', APP_USER_ID);
+                
+                if (userCardsError) {
+                    resultDiv.innerHTML += `User cards error: ${userCardsError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `User cards found: ${userCards.length}<br>`;
+                    if (userCards.length > 0) {
+                        resultDiv.innerHTML += `User cards: ${JSON.stringify(userCards, null, 2)}<br>`;
+                    }
+                }
+                
+                // Test 2: Check user_cards_with_content for the app user
+                resultDiv.innerHTML += '<br>Test 2: Checking user_cards_with_content for app user...<br>';
+                const { data: userCardsWithContent, error: userCardsWithContentError } = await supabase
+                    .from('user_cards_with_content')
+                    .select('*')
+                    .eq('user_id', APP_USER_ID);
+                
+                if (userCardsWithContentError) {
+                    resultDiv.innerHTML += `User cards with content error: ${userCardsWithContentError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `User cards with content found: ${userCardsWithContent.length}<br>`;
+                    if (userCardsWithContent.length > 0) {
+                        resultDiv.innerHTML += `First card: ${JSON.stringify(userCardsWithContent[0], null, 2)}<br>`;
+                    }
+                }
+                
+                // Test 3: Add a test card for the app user
+                resultDiv.innerHTML += '<br>Test 3: Adding a test card for app user...<br>';
+                const { data: addResult, error: addError } = await supabase.rpc('add_card_to_user_with_lesson', {
+                    p_language_pair_id: 'ru-es',
+                    p_term: 'test_app_user',
+                    p_translation: 'тест для пользователя приложения',
+                    p_image_url: null,
+                    p_english: 'test for app user',
+                    p_lesson_id: 'intro',
+                    p_lesson_order: 1
+                });
+                
+                if (addError) {
+                    resultDiv.innerHTML += `Add card error: ${addError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `Add card result: ${JSON.stringify(addResult)}<br>`;
+                }
+                
+                // Test 4: Check if card was added
+                resultDiv.innerHTML += '<br>Test 4: Checking if card was added...<br>';
+                const { data: userCardsAfter, error: userCardsAfterError } = await supabase
+                    .from('user_cards')
+                    .select('*')
+                    .eq('user_id', APP_USER_ID);
+                
+                if (userCardsAfterError) {
+                    resultDiv.innerHTML += `User cards after error: ${userCardsAfterError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `User cards after: ${userCardsAfter.length}<br>`;
+                    if (userCardsAfter.length > userCards.length) {
+                        resultDiv.innerHTML += `🎉 SUCCESS: Card was added!<br>`;
+                    } else {
+                        resultDiv.innerHTML += `❌ PROBLEM: No new card was added<br>`;
+                    }
+                }
+                
+                // Test 5: Check user_cards_with_content after adding
+                resultDiv.innerHTML += '<br>Test 5: Checking user_cards_with_content after adding...<br>';
+                const { data: userCardsWithContentAfter, error: userCardsWithContentAfterError } = await supabase
+                    .from('user_cards_with_content')
+                    .select('*')
+                    .eq('user_id', APP_USER_ID);
+                
+                if (userCardsWithContentAfterError) {
+                    resultDiv.innerHTML += `User cards with content after error: ${userCardsWithContentAfterError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `User cards with content after: ${userCardsWithContentAfter.length}<br>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `Exception: ${error.message}`;
+                console.error('Exception:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,304 @@
+.wrap {
+  position: relative;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2.5vh, 24px);
+  padding: clamp(16px, 3vw, 24px);
+  position: relative;
+  z-index: 10;
+}
+
+/* Кредиты */
+.credits {
+  align-self: center;
+  padding: 12px 22px;
+  font-weight: 800;
+  font-size: clamp(14px, 3.8vw, 22px);
+  color: #f5f0d8;
+  border: 6px solid var(--gold-dark);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #1d4b40 0%, #12362d 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.06),
+    0 6px 16px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.credits::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 48%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0)
+  );
+}
+
+/* Слово */
+.word {
+  text-align: center;
+  margin: 2vh 0 0;
+  font-size: clamp(40px, 12vw, 96px);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  color: #f7f1d5;
+  text-shadow: 0 1px 0 #1b1b1b, 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Новый блок управления ставками */
+.bettingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 2vh, 16px);
+  margin-top: clamp(16px, 3vh, 28px);
+}
+
+.betSelector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  padding: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.betControlButton {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #3a3a3a, #1a1a1a);
+  color: #fff;
+  border: 2px solid #555;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.1s ease;
+}
+
+.betControlButton:active {
+  transform: translateY(1px);
+  background: linear-gradient(180deg, #2a2a2a, #0a0a0a);
+}
+
+.betDisplay {
+  min-width: 120px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: #fff;
+  font-size: clamp(24px, 5vw, 32px);
+  font-weight: 700;
+  border-radius: 12px;
+  border: 4px solid var(--gold);
+  text-shadow: 0 0 8px #ff0;
+}
+
+.allInButton {
+  padding: 12px 24px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #8b2d8b, #6b1a6b);
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(16px, 3.5vw, 20px);
+  border: 2px solid #c87ee6;
+  transition: all 0.1s ease;
+}
+
+.allInButton.allInSelected {
+  outline: 3px solid var(--gold);
+  box-shadow: 0 0 12px #ff0;
+}
+
+/* Кнопки EL/LA */
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: clamp(14px, 3.5vw, 22px);
+  margin: clamp(16px, 3vh, 28px) 0;
+}
+
+.bigBtn {
+  min-width: min(26vw, 192px);
+  padding: clamp(14px, 2.8vh, 22px) clamp(18px, 6vw, 38px);
+  border-radius: 18px;
+  border: 6px solid var(--gold-dark);
+  font-weight: 900;
+  font-size: clamp(24px, 6.5vw, 42px);
+  color: #fff6e0;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: transform 0.06s ease, filter 0.06s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bigBtn::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 52%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.22),
+    rgba(255, 255, 255, 0)
+  );
+}
+
+.bigBtn:active {
+  transform: translateY(1px);
+  filter: brightness(0.97);
+}
+.el {
+  background: linear-gradient(#2e6aaa, #214d77);
+}
+.la {
+  background: linear-gradient(#b33a3a, #8d2323);
+}
+
+/* Рамка и виньетка */
+.wrap::before {
+  content: "";
+  position: fixed;
+  inset: clamp(8px, 2.6vw, 22px);
+  border-radius: clamp(14px, 3vw, 26px);
+  border: 14px solid var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-dark) inset,
+    0 8px 26px rgba(0, 0, 0, 0.35) inset, 0 10px 28px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.wrap::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  border-radius: clamp(18px, 3.4vw, 30px);
+  background: radial-gradient(
+    120% 90% at 50% 25%,
+    rgba(0, 0, 0, 0) 40%,
+    rgba(0, 0, 0, 0.25) 70%,
+    rgba(0, 0, 0, 0.45) 100%
+  );
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* Кнопка "Назад" */
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 4px solid var(--gold-dark);
+  color: #f5f0d8;
+  background: linear-gradient(180deg, #114235 0%, #0b332a 100%);
+  z-index: 20;
+}
+
+.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Медиа-запросы для адаптивности */
+@media (max-width: 768px) {
+  .word {
+    font-size: clamp(36px, 11vw, 80px);
+  }
+  .betDisplay {
+    min-width: 110px;
+    height: 56px;
+    font-size: clamp(22px, 4.5vw, 28px);
+  }
+  .bigBtn {
+    min-width: min(30vw, 160px);
+    font-size: clamp(20px, 5.5vw, 36px);
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    gap: clamp(8px, 2vh, 16px);
+  }
+  .word {
+    font-size: clamp(32px, 10vw, 72px);
+  }
+  .betSelector {
+    gap: 8px;
+    padding: 6px;
+  }
+  .betControlButton {
+    width: 48px;
+    height: 48px;
+  }
+  .betDisplay {
+    min-width: 100px;
+    height: 52px;
+  }
+  .allInButton {
+    padding: 10px 20px;
+  }
+  .bigBtn {
+    min-width: min(35vw, 140px);
+  }
+}
+
+@media (max-width: 360px) {
+  .word {
+    font-size: clamp(28px, 9vw, 60px);
+  }
+  .betSelector {
+    gap: 6px;
+  }
+  .betControlButton {
+    width: 44px;
+    height: 44px;
+  }
+  .betDisplay {
+    min-width: 80px;
+    height: 48px;
+  }
+  .allInButton {
+    padding: 8px 16px;
+    font-size: clamp(14px, 3vw, 18px);
+  }
+  .bigBtn {
+    min-width: min(40vw, 120px);
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .container {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+  .word {
+    flex: 1;
+    margin: 0;
+    font-size: clamp(24px, 8vh, 60px);
+  }
+  .bettingContainer {
+    flex: 1;
+    margin: 0;
+  }
+}

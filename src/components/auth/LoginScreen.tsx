@@ -125,7 +125,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   placeholder="example@email.com"
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-black ${
                     errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                 />
@@ -148,7 +148,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
                   placeholder="Введите пароль"
-                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-black ${
                     errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                 />

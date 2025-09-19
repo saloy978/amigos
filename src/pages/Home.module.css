@@ -1,0 +1,300 @@
+.screen{
+  /* полная высота экрана */
+  min-height: 100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap: 24px;
+  padding: 20px clamp(16px, 4vw, 28px);
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .screen {
+    gap: 16px;
+    padding: 16px clamp(12px, 3vw, 20px);
+    min-height: 100vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .screen {
+    gap: 12px;
+    padding: 12px 8px;
+  }
+}
+
+/* Переключатель темы (пилюля вверху справа) */
+.switch {
+  position: sticky;
+  top: 12px;
+  align-self: flex-end;
+  z-index: 20;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 12px;
+  border: 2px solid var(--gold-dark);
+  background: #0d3a30;
+  color: #f5f0d8;
+  opacity: .95;
+}
+
+/* Кнопка "Назад" в стиле казино */
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 12px;
+  font-weight: 700;
+  border-radius: 12px;
+  border: 4px solid var(--gold-dark);
+  color: #f5f0d8;
+  background: linear-gradient(180deg, #114235 0%, #0b332a 100%);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.06);
+  position: relative;
+  overflow: hidden;
+  transition: transform .06s ease, filter .06s ease;
+  cursor: pointer;
+}
+.backButton::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 48%;
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0));
+  pointer-events: none;
+}
+.backButton:active {
+  transform: translateY(1px);
+  filter: brightness(.97);
+}
+.backButton:hover {
+  filter: brightness(1.1);
+}
+
+/* Заголовок с «золотым металлик-бликом» */
+.title{
+  margin: 4vh auto 0;
+  text-align:center;
+  font-size: clamp(48px, 10vw, 120px);
+  line-height:0.9;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  font-weight: 900;
+  background:
+    linear-gradient(180deg, #ffed4e 0%, #f7d94c 15%, #e6c547 35%, #d4b041 55%, #c19d3b 75%, #b2891b 100%),
+    radial-gradient(140% 140% at 25% 15%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 30%, rgba(255,255,255,0) 70%),
+    linear-gradient(45deg, #ffd700 0%, #ffed4e 25%, #f7d94c 50%, #e6c547 75%, #d4b041 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow:
+    0 2px 0 #4e3a0d,
+    0 4px 8px rgba(0,0,0,.3),
+    0 8px 16px rgba(0,0,0,.2),
+    0 12px 24px rgba(0,0,0,.4);
+  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.3));
+}
+
+/* Мобильная адаптация заголовка */
+@media (max-width: 768px) {
+  .title {
+    margin: 2vh auto 0;
+    font-size: clamp(36px, 8vw, 80px);
+    line-height: 0.95;
+    letter-spacing: .06em;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    margin: 1vh auto 0;
+    font-size: clamp(28px, 7vw, 60px);
+    line-height: 1.0;
+    letter-spacing: .04em;
+  }
+}
+
+/* Центральный блок */
+.center{ display:flex; align-items:center; justify-content:center; padding: 24px 0; }
+
+/* Большая красная кнопка с золотой окантовкой и глянцевым бликом */
+.play{
+  display:inline-block;
+  min-width: min(55vw, 336px);
+  padding: clamp(14px,2.6vh,24px) clamp(18px,6vw,48px);
+  font-weight:800;
+  font-size: clamp(20px,4.6vw,40px);
+  letter-spacing:.06em;
+  border-radius: 18px;
+  border: 6px solid var(--gold-dark);
+  color:#fff6e0;
+  background:
+    linear-gradient(180deg, #c74646 0%, #8d2323 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,.08),
+    0 8px 24px rgba(0,0,0,.4);
+  position: relative;
+  overflow: hidden;
+  transition: transform .06s ease, filter .06s ease;
+  /* Улучшения для мобильных устройств */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Мобильная адаптация кнопки JUGAR */
+@media (max-width: 768px) {
+  .play {
+    min-width: min(70vw, 280px);
+    padding: clamp(12px, 2.2vh, 20px) clamp(16px, 5vw, 40px);
+    font-size: clamp(18px, 4vw, 32px);
+    border-radius: 16px;
+    border: 5px solid var(--gold-dark);
+  }
+}
+
+@media (max-width: 480px) {
+  .play {
+    min-width: min(80vw, 240px);
+    padding: clamp(10px, 2vh, 18px) clamp(14px, 4vw, 32px);
+    font-size: clamp(16px, 3.5vw, 28px);
+    border-radius: 14px;
+    border: 4px solid var(--gold-dark);
+  }
+}
+.play::after{
+  /* глянцевый «металлик-блик» сверху */
+  content:"";
+  position:absolute; left:0; right:0; top:0;
+  height: 52%;
+  background: linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,0));
+  pointer-events:none;
+}
+.play:active{ transform: translateY(1px); filter: brightness(.97); }
+
+/* Плашка кредитов — тёмная табличка с золотой рамкой и лёгким бликом */
+.credits{
+  width: fit-content;
+  margin: 0 auto 12px;
+  padding: 12px 20px;
+  font-weight: 800;
+  font-size: clamp(14px, 3.5vw, 22px);
+  border: 4px solid var(--gold-dark);
+  border-radius: 16px;
+  color:#f5f0d8;
+  background:
+    linear-gradient(180deg, #1d4b40 0%, #12362d 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,.06);
+  position: relative;
+  overflow: hidden;
+}
+.credits::after{
+  content:"";
+  position:absolute; left:0; right:0; top:0;
+  height: 45%;
+  background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,0));
+}
+
+/* Нижние две кнопки — зеленые таблички с «металлик-бликом» */
+.bottom{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: min(92vw, 560px);
+  margin: 0 auto clamp(16px, 4vh, 28px);
+}
+
+/* Мобильная адаптация нижних кнопок */
+@media (max-width: 768px) {
+  .bottom {
+    gap: 12px;
+    width: min(95vw, 400px);
+    margin: 0 auto clamp(12px, 3vh, 20px);
+  }
+}
+
+@media (max-width: 480px) {
+  .bottom {
+    gap: 8px;
+    width: min(98vw, 320px);
+    margin: 0 auto clamp(8px, 2vh, 16px);
+  }
+}
+.secondary{
+  display:inline-block;
+  text-align:center;
+  padding: 14px 16px;
+  font-weight:700;
+  border: 4px solid var(--gold-dark);
+  border-radius: 16px;
+  color:#f5f0d8;
+  text-decoration:none;
+  background: linear-gradient(180deg, #114235 0%, #0b332a 100%);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.06);
+  position: relative;
+  overflow: hidden;
+  /* Улучшения для мобильных устройств */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Мобильная адаптация вторичных кнопок */
+@media (max-width: 768px) {
+  .secondary {
+    padding: 12px 14px;
+    font-size: clamp(14px, 3.5vw, 18px);
+    border-radius: 14px;
+    border: 3px solid var(--gold-dark);
+  }
+}
+
+@media (max-width: 480px) {
+  .secondary {
+    padding: 10px 12px;
+    font-size: clamp(12px, 3vw, 16px);
+    border-radius: 12px;
+    border: 2px solid var(--gold-dark);
+  }
+}
+.secondary::after{
+  content:"";
+  position:absolute; left:0; right:0; top:0;
+  height: 48%;
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0));
+}
+.secondary:active{ transform: translateY(1px); }
+
+/* Вариант с золотой рамкой и мягкой виньеткой (поверх страницы, прокрутка разрешена) */
+.framed::before{
+  content:"";
+  position: fixed;
+  inset: clamp(8px, 2.6vw, 22px);
+  border-radius: clamp(14px,3vw,26px);
+  border: 14px solid var(--gold);
+  box-shadow:
+    0 0 0 3px var(--gold-dark) inset,
+    0 8px 26px rgba(0,0,0,.35) inset,
+    0 10px 28px rgba(0,0,0,.45);
+  pointer-events:none;
+  z-index: 5;
+}
+.framed::after{
+  content:"";
+  position: fixed;
+  inset: 0;
+  border-radius: clamp(18px, 3.4vw, 30px);
+  background: radial-gradient(120% 90% at 50% 25%,
+              rgba(0,0,0,0) 40%,
+              rgba(0,0,0,.25) 70%,
+              rgba(0,0,0,.45) 100%);
+  pointer-events:none;
+  z-index: 6;
+}
+/* чтобы контент был выше виньетки/рамки */
+.screen > *{ position: relative; z-index: 10; }

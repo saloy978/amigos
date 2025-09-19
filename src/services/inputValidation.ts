@@ -62,6 +62,6 @@ export class InputValidationService {
   }
 
   private static removePunctuation(text: string): string {
-    return text.replace(/[^\w\s]/g, '');
+    return text.replace(/[^\w\s\u0400-\u04FF]/g, '');
   }
 }

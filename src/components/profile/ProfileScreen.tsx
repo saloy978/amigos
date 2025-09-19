@@ -13,7 +13,8 @@ import {
   Info,
   LogOut,
   QrCode,
-  Edit
+  Edit,
+  BookOpen
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { LanguageSelectionModal } from '../modals/LanguageSelectionModal';
@@ -21,19 +22,37 @@ import { EditProfileModal } from '../modals/EditProfileModal';
 import { DatabaseService } from '../../services/database';
 import { UserService } from '../../services/userService';
 
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url?: string;
+  level: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
 interface ProfileScreenProps {
   onBack: () => void;
   onLogout: () => void;
 }
+
+const LEVELS = [
+  { value: 'Beginner', label: 'Beginner • A1' },
+  { value: 'Elementary', label: 'Elementary • A2' },
+  { value: 'Intermediate', label: 'Intermediate • B1' },
+  { value: 'Upper-Intermediate', label: 'Upper-Intermediate • B2' },
+  { value: 'Advanced', label: 'Advanced • C1' },
+  { value: 'Proficient', label: 'Proficient • C2' }
+];
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack, onLogout }) => {
   const { state } = useAppContext();
   const [dailyGoal, setDailyGoal] = useState(20);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(() => {
-    return UserService.getCurrentUser();
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [currentLanguagePair, setCurrentLanguagePair] = useState(() => {
     const settings = UserService.getUserSettings();
     const pair = settings || DatabaseService.getLanguagePair();
@@ -46,22 +65,62 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack, onLogout }
     };
   });
   
-  // Update user data when component mounts
+  // Load user data from Supabase when component mounts
   useEffect(() => {
-    const user = UserService.getCurrentUser();
-    const settings = UserService.getUserSettings();
+    const loadUserData = async () => {
+      try {
+        setIsLoadingUser(true);
+        
+        // First try to get user directly from auth.users
+        let user = await UserService.getCurrentUserFromAuth();
+        
+        // If no user from auth, try to get from database with settings
+        if (!user) {
+          user = await UserService.getCurrentUserFromDB();
+        }
+        
+        // If still no user, try localStorage as fallback
+        if (!user) {
+          user = UserService.getCurrentUser();
+        }
+        
+        // If still no user, create one from auth data
+        if (!user) {
+          user = await UserService.createOrUpdateUserInDB({});
+        }
+        
+        if (user) {
+          console.log('Loaded user data:', { 
+            id: user.id, 
+            email: user.email, 
+            name: user.name,
+            display_name: user.name 
+          });
+          setCurrentUser(user);
+        }
+        
+        // Load language settings
+        const settings = UserService.getUserSettings();
+        if (settings) {
+          const pair = {
+            known: { code: settings.known_language_code, name: settings.known_language, flag: getLanguageFlag(settings.known_language_code) },
+            learning: { code: settings.learning_language_code, name: settings.learning_language, flag: getLanguageFlag(settings.learning_language_code) }
+          };
+          setCurrentLanguagePair(pair);
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        // Fallback to localStorage
+        const user = UserService.getCurrentUser();
+        if (user) {
+          setCurrentUser(user);
+        }
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
     
-    if (user) {
-      setCurrentUser(user);
-    }
-    
-    if (settings) {
-      const pair = {
-        known: { code: settings.known_language_code, name: settings.known_language, flag: getLanguageFlag(settings.known_language_code) },
-        learning: { code: settings.learning_language_code, name: settings.learning_language, flag: getLanguageFlag(settings.learning_language_code) }
-      };
-      setCurrentLanguagePair(pair);
-    }
+    loadUserData();
   }, []);
 
   const totalWords = state.cards.length;
@@ -88,7 +147,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack, onLogout }
 
       // Update user level as well
       await UserService.updateUser({ level });
-      setCurrentUser(prev => ({ ...prev, level }));
+      setCurrentUser((prev: User | null) => prev ? ({ ...prev, level }) : null);
 
       // Validate the change
       const validation = await DatabaseService.validateLanguagePairChange(
@@ -134,10 +193,21 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack, onLogout }
     }
   };
 
-  const handleProfileSave = async (userData: { name: string; email: string; level: string; avatar_url?: string }) => {
+  const handleProfileSave = async (userData: { name: string; email: string; avatar_url?: string }) => {
     try {
+      // Update display_name in auth.users if name changed
+      if (userData.name && userData.name !== currentUser?.name) {
+        await UserService.updateUserDisplayNameInAuth(userData.name);
+      }
+      
       const updatedUser = await UserService.updateUser(userData);
       setCurrentUser(updatedUser);
+      
+      console.log('Profile saved successfully:', {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name
+      });
     } catch (error) {
       console.error('Error saving profile:', error);
       alert('Ошибка при сохранении профиля');
@@ -147,6 +217,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack, onLogout }
   const handleDailyGoalChange = (value: number) => {
     setDailyGoal(value);
     UserService.updateUserSettings({ daily_goal: value });
+  };
+
+  const handleLevelChange = async (level: string) => {
+    try {
+      await UserService.updateUser({ level });
+      setCurrentUser((prev: User | null) => prev ? ({ ...prev, level }) : null);
+      
+      // Refresh user data to ensure consistency
+      const refreshedUser = await UserService.getCurrentUserFromAuth();
+      if (refreshedUser) {
+        setCurrentUser(refreshedUser);
+      }
+    } catch (error) {
+      console.error('Error updating level:', error);
+      alert('Ошибка при обновлении уровня языка');
+    }
   };
 
   const MenuItem: React.FC<{
@@ -190,7 +276,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack, onLogout }
               onClick={onBack}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <img src="/assets/Home-1.png" alt="Home" className="w-6 h-6" />
+              <img src="/assets/Back.png" alt="Back" className="w-6 h-6" />
             </button>
             <h1 className="font-semibold text-gray-900">Профиль</h1>
             <div className="w-12" />
@@ -199,7 +285,27 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack, onLogout }
 
         <div className="p-4">
           {/* Profile Header */}
-          {currentUser ? (
+          {isLoadingUser ? (
+            <div className="bg-white rounded-2xl p-6 mb-6 shadow-sm">
+              <div className="animate-pulse">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 h-20 bg-gray-200 rounded-full"></div>
+                    <div>
+                      <div className="h-6 bg-gray-200 rounded w-32 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="h-3 bg-gray-200 rounded mb-4"></div>
+                <div className="flex justify-between">
+                  <div className="h-4 bg-gray-200 rounded w-16"></div>
+                  <div className="h-4 bg-gray-200 rounded w-20"></div>
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </div>
+              </div>
+            </div>
+          ) : currentUser ? (
             <div className="bg-white rounded-2xl p-6 mb-6 shadow-sm">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-4">
@@ -229,7 +335,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack, onLogout }
                       <Edit className="w-4 h-4" />
                     </button>
                   </div>
-                  <p className="text-gray-600">{currentUser.level} • B1</p>
+                  <p className="text-gray-600">{currentUser?.level || 'Beginner'}</p>
                 </div>
               </div>
               <QrCode className="w-8 h-8 text-gray-400" />
@@ -281,9 +387,33 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack, onLogout }
               onClick={() => console.log('Change password')}
             />
             <MenuItem
+              icon={<BookOpen className="w-5 h-5" />}
+              title="Уровень языка"
+              rightContent={
+                <select
+                  value={currentUser?.level || 'Beginner'}
+                  onChange={(e) => handleLevelChange(e.target.value)}
+                  className="text-sm text-gray-500 bg-transparent border-none outline-none cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {LEVELS.map((level) => (
+                    <option key={level.value} value={level.value}>
+                      {level.label}
+                    </option>
+                  ))}
+                </select>
+              }
+              onClick={() => {}} // Disable click to prevent menu item action
+            />
+            <MenuItem
               icon={<Globe className="w-5 h-5" />}
               title="App language"
               onClick={() => console.log('App language')}
+            />
+            <MenuItem
+              icon={<LogOut className="w-5 h-5" />}
+              title="Log out"
+              onClick={onLogout}
             />
           </div>
 
@@ -356,13 +486,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack, onLogout }
             />
           </div>
 
-          {/* Logout Button */}
-          <button
-            onClick={onLogout}
-            className="w-full bg-red-500 hover:bg-red-600 text-white py-4 rounded-2xl font-semibold transition-colors mb-8"
-          >
-            Log out
-          </button>
         </div>
 
         {/* Language Selection Modal */}
@@ -372,7 +495,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack, onLogout }
           onSave={handleLanguagePairSave}
           currentKnownLanguage={currentLanguagePair.known}
           currentLearningLanguage={currentLanguagePair.learning}
-          currentLevel={currentUser.level}
+          currentLevel={currentUser?.level || 'Beginner'}
         />
 
         {/* Edit Profile Modal */}
@@ -380,11 +503,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack, onLogout }
           isOpen={isEditProfileModalOpen}
           onClose={() => setIsEditProfileModalOpen(false)}
           onSave={handleProfileSave}
-          currentUser={currentUser}
+          currentUser={currentUser || { id: '', email: '', name: '', level: 'Beginner', created_at: new Date(), updated_at: new Date() }}
         />
       </div>
 
-      <style jsx>{`
+      <style>{`
         .slider::-webkit-slider-thumb {
           appearance: none;
           height: 16px;

@@ -1,7 +1,21 @@
-import React from 'react';
-import { TrendingUp, Calendar, Target, Award, Clock, Flame } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { TrendingUp, Target, Award } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
-import { CardState } from '../../types';
+import { CardState, Lesson } from '../../types';
+import { LessonProgressService } from '../../services/lessonProgressService';
+import { useStreak } from '../../hooks/useStreak';
+import { StreakDisplay } from '../streak/StreakDisplay';
+import { UserService } from '../../services/userService';
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url?: string;
+  level: string;
+  created_at: Date;
+  updated_at: Date;
+}
 
 interface StatsScreenProps {
   onBack: () => void;
@@ -10,10 +24,54 @@ interface StatsScreenProps {
 export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack }) => {
   const { state } = useAppContext();
   
+  // Состояние для уроков и их прогресса
+  const [lessonProgress, setLessonProgress] = useState<{ [lessonId: string]: number }>({});
+  const [progressLoaded, setProgressLoaded] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // Streak система
+  const {
+    currentStreak,
+    longestStreak,
+    totalDaysActive,
+    isLoading: streakLoading,
+    error: streakError
+  } = useStreak(currentUser?.id || '');
+  
+  // Данные уроков (те же, что и в LessonsScreen)
+  const lessons: Lesson[] = [
+    {
+      id: 'intro',
+      title: 'Приветствие и знакомство',
+      description: 'Основные фразы для знакомства',
+      level: 'beginner',
+      duration: 15,
+      cardCount: 22,
+      completed: false,
+      progress: 0,
+      category: 'basics',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'lesson-1-nouns-gender-number',
+      title: 'Имя существительное — род',
+      description: 'Изучаем род существительных с интерактивными играми',
+      level: 'beginner',
+      duration: 25,
+      cardCount: 0,
+      completed: false,
+      progress: 0,
+      category: 'basics',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  ];
+  
   const totalCards = state.cards.length;
   const learnCards = state.cards.filter(card => card.state === CardState.LEARN).length;
-  const knownCards = state.cards.filter(card => card.state === CardState.KNOW).length;
-  const masteredCards = state.cards.filter(card => card.state === CardState.MASTERED).length;
+  const knownCards = state.cards.filter(card => card.state === CardState.REVIEW).length;
+  const masteredCards = state.cards.filter(card => card.state === CardState.SUSPENDED).length;
   
   const averageProgress = totalCards > 0 
     ? Math.round(state.cards.reduce((sum, card) => sum + card.progress, 0) / totalCards)
@@ -29,6 +87,71 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack }) => {
     .filter(card => card.reviewCount > 2)
     .sort((a, b) => (a.successfulReviews / a.reviewCount) - (b.successfulReviews / b.reviewCount))
     .slice(0, 5);
+
+  // Функция для получения текущего прогресса урока
+  const getCurrentProgress = (lessonId: string) => {
+    return lessonProgress[lessonId] || 0;
+  };
+
+  // Загружаем прогресс уроков из Supabase
+  const loadProgressFromSupabase = useCallback(async () => {
+    if (progressLoaded) return;
+    
+    try {
+      console.log('📊 Loading lesson progress for stats');
+      const allProgress = await LessonProgressService.getAllLessonProgress();
+      
+      const progressMap: { [lessonId: string]: number } = {};
+      allProgress.forEach(progress => {
+        progressMap[progress.lesson_id] = progress.total_progress;
+      });
+      
+      setLessonProgress(progressMap);
+      setProgressLoaded(true);
+      console.log('📊 Loaded lesson progress for stats:', progressMap);
+    } catch (error) {
+      console.error('❌ Error loading lesson progress for stats:', error);
+      setProgressLoaded(true);
+    }
+  }, [progressLoaded]);
+
+  // Загружаем прогресс при монтировании
+  useEffect(() => {
+    loadProgressFromSupabase();
+  }, [loadProgressFromSupabase]);
+
+  // Загружаем данные пользователя
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        // Try to get user from Supabase database first
+        let user = await UserService.getCurrentUserFromDB();
+        
+        // If no user in database, try localStorage as fallback
+        if (!user) {
+          user = UserService.getCurrentUser();
+        }
+        
+        // If still no user, create one from auth data
+        if (!user) {
+          user = await UserService.createOrUpdateUserInDB({});
+        }
+        
+        if (user) {
+          setCurrentUser(user);
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        // Fallback to localStorage
+        const user = UserService.getCurrentUser();
+        if (user) {
+          setCurrentUser(user);
+        }
+      }
+    };
+
+    loadUserData();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -48,13 +171,17 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack }) => {
         </div>
 
         <div className="p-4 space-y-6">
+          {/* Streak Display */}
+          <StreakDisplay
+            currentStreak={currentStreak}
+            longestStreak={longestStreak}
+            totalDaysActive={totalDaysActive}
+            isLoading={streakLoading}
+            error={streakError}
+          />
+
           {/* Overview Cards */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-xl text-white">
-              <Flame className="w-6 h-6 mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{state.userStats.streak}</div>
-              <div className="text-sm opacity-90">Дней подряд</div>
-            </div>
             
             <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-xl text-white">
               <Award className="w-6 h-6 mb-2 opacity-80" />
@@ -144,6 +271,31 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack }) => {
             </div>
           </div>
 
+          {/* Lessons Progress */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <h3 className="font-semibold text-gray-900 mb-4">Прогресс уроков</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {lessons.filter(l => getCurrentProgress(l.id) === 100).length}
+                </div>
+                <div className="text-sm text-gray-600">Завершено</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">
+                  {lessons.filter(l => getCurrentProgress(l.id) > 0 && getCurrentProgress(l.id) < 100).length}
+                </div>
+                <div className="text-sm text-gray-600">В процессе</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-600">
+                  {lessons.filter(l => getCurrentProgress(l.id) === 0).length}
+                </div>
+                <div className="text-sm text-gray-600">Новые</div>
+              </div>
+            </div>
+          </div>
+
           {/* Difficult Words */}
           {difficultyAnalysis.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-xl p-4">
@@ -155,7 +307,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack }) => {
                     : 0;
                   
                   return (
-                    <div key={card.id} className="flex items-center justify-between py-2">
+                    <div key={card.cardId} className="flex items-center justify-between py-2">
                       <div className="flex-1">
                         <div className="font-medium text-gray-900">{card.term}</div>
                         <div className="text-sm text-gray-600">{card.translation}</div>

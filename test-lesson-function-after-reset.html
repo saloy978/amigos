@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Lesson Function After Reset</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test Lesson Function After Reset</h1>
+    <button id="testBtn">Test Lesson Function After Reset</button>
+    <div id="result"></div>
+
+    <script>
+        const supabaseUrl = 'http://127.0.0.1:54321';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Sign in anonymously
+                const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+                
+                if (authError) {
+                    resultDiv.innerHTML = `Auth Error: ${authError.message}`;
+                    return;
+                }
+                
+                resultDiv.innerHTML = `Auth Success! User ID: ${authData.user.id}<br>`;
+                
+                // Test adding lesson words
+                resultDiv.innerHTML += '<br>Testing lesson words addition...<br>';
+                
+                const lessonWords = [
+                    { term: 'hola', translation: 'привет', english: 'hello' },
+                    { term: 'buenos días', translation: 'доброе утро', english: 'good morning' },
+                    { term: 'buenas tardes', translation: 'добрый день', english: 'good afternoon' }
+                ];
+                
+                let addedCount = 0;
+                let skippedCount = 0;
+                
+                for (let i = 0; i < lessonWords.length; i++) {
+                    const word = lessonWords[i];
+                    const lessonOrder = i + 1;
+                    
+                    resultDiv.innerHTML += `Adding word ${i + 1}/${lessonWords.length}: "${word.term}" - "${word.translation}" (order: ${lessonOrder})<br>`;
+                    
+                    try {
+                        const { data, error } = await supabase.rpc('add_card_to_user_with_lesson', {
+                            p_language_pair_id: 'ru-es',
+                            p_term: word.term,
+                            p_translation: word.translation,
+                            p_image_url: null,
+                            p_english: word.english,
+                            p_lesson_id: 'intro',
+                            p_lesson_order: lessonOrder
+                        });
+                        
+                        if (error) {
+                            resultDiv.innerHTML += `❌ Error adding "${word.term}": ${error.message}<br>`;
+                            console.error('Error:', error);
+                        } else {
+                            resultDiv.innerHTML += `✅ Added "${word.term}": ${JSON.stringify(data)}<br>`;
+                            if (data.is_new) {
+                                addedCount++;
+                            } else {
+                                skippedCount++;
+                            }
+                        }
+                    } catch (error) {
+                        resultDiv.innerHTML += `❌ Exception adding "${word.term}": ${error.message}<br>`;
+                        console.error('Exception:', error);
+                    }
+                }
+                
+                resultDiv.innerHTML += `<br>Summary: Added ${addedCount} new cards, skipped ${skippedCount} duplicates<br>`;
+                
+                // Check final state
+                resultDiv.innerHTML += '<br>Checking final state...<br>';
+                const { data: userCards, error: userCardsError } = await supabase
+                    .from('user_cards')
+                    .select('*')
+                    .eq('user_id', authData.user.id);
+                
+                if (userCardsError) {
+                    resultDiv.innerHTML += `User cards error: ${userCardsError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `User cards found: ${userCards.length}<br>`;
+                    if (userCards.length > 0) {
+                        resultDiv.innerHTML += `User cards: ${JSON.stringify(userCards, null, 2)}<br>`;
+                    }
+                }
+                
+                // Check user_cards_with_content
+                resultDiv.innerHTML += '<br>Checking user_cards_with_content...<br>';
+                const { data: userCardsWithContent, error: userCardsWithContentError } = await supabase
+                    .from('user_cards_with_content')
+                    .select('*')
+                    .eq('user_id', authData.user.id);
+                
+                if (userCardsWithContentError) {
+                    resultDiv.innerHTML += `User cards with content error: ${userCardsWithContentError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `User cards with content found: ${userCardsWithContent.length}<br>`;
+                    if (userCardsWithContent.length > 0) {
+                        resultDiv.innerHTML += `First card: ${JSON.stringify(userCardsWithContent[0], null, 2)}<br>`;
+                    }
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `Exception: ${error.message}`;
+                console.error('Exception:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+

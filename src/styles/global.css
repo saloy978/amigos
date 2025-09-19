@@ -1,0 +1,144 @@
+html, body, #root { 
+  height: 100vh; 
+  margin: 0; 
+  padding: 0;
+  overflow: hidden;
+  /* Улучшения для мобильных устройств */
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+body { 
+  margin: 0; 
+  background:
+    radial-gradient(130% 120% at 50% -10%, #135243 0%, #072f24 70%),
+    linear-gradient(#0b3c2f, #0b3c2f);
+  color: #f5f0d8;
+  min-height: 100vh;
+  overflow: hidden;
+  /* Предотвращение зума на мобильных устройствах */
+  touch-action: manipulation;
+}
+:root{
+  --casino-green: #0f4a3a;
+  --casino-green-2:#0b3c2f;
+  --gold:#e8cc5a;
+  --gold-dark:#b2891b;
+  --panel:#173e34;
+}
+
+/* Фоновая «суконная» подложка на весь экран */
+.app-bg {
+  min-height: 100vh;
+  background:
+    radial-gradient(130% 120% at 50% -10%, #135243 0%, #072f24 70%),
+    linear-gradient(#0b3c2f, #0b3c2f);
+  color:#f5f0d8;
+}
+
+/* Медиа-запросы для мобильных устройств */
+@media (max-width: 768px) {
+  html, body, #root {
+    /* Убираем overflow: hidden на мобильных для лучшей прокрутки */
+    overflow: auto;
+  }
+  
+  body {
+    overflow: auto;
+  }
+  
+  .app-bg {
+    /* Уменьшаем минимальную высоту на мобильных */
+    min-height: 100vh;
+    /* Добавляем поддержку safe-area для iPhone X и новее */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+
+/* Медиа-запросы для очень маленьких экранов */
+@media (max-width: 480px) {
+  .app-bg {
+    /* Дополнительные отступы для очень маленьких экранов */
+    padding: 8px;
+  }
+}
+
+/* Медиа-запросы для ландшафтной ориентации на мобильных */
+@media (max-height: 500px) and (orientation: landscape) {
+  .app-bg {
+    /* Уменьшаем отступы в ландшафтной ориентации */
+    padding: 4px;
+  }
+}
+
+/* Улучшения для сенсорных взаимодействий */
+@media (hover: none) and (pointer: coarse) {
+  /* Увеличиваем размеры кнопок для touch-устройств */
+  button, .chip, .bigBtn, .play, .secondary, .nextButton, .spinBtn, .nextBtn {
+    min-height: 44px; /* Минимальный размер для удобного нажатия */
+    min-width: 44px;
+  }
+  
+  /* Увеличиваем отступы между интерактивными элементами */
+  .chipsRow {
+    gap: 16px !important;
+  }
+  
+  .actions {
+    gap: 20px !important;
+  }
+  
+  /* Улучшаем визуальную обратную связь для touch */
+  button:active, .chip:active, .bigBtn:active, .play:active, .secondary:active, .nextButton:active, .spinBtn:active, .nextBtn:active {
+    transform: scale(0.95) !important;
+    transition: transform 0.1s ease !important;
+  }
+}
+
+/* Дополнительные улучшения для очень маленьких экранов */
+@media (max-width: 360px) {
+  .app-bg {
+    padding: 4px;
+  }
+  
+  /* Уменьшаем размеры элементов для очень маленьких экранов */
+  .chip {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 12px !important;
+  }
+  
+  .bigBtn {
+    min-width: 120px !important;
+    font-size: 16px !important;
+  }
+}
+
+/* Стили для полей ввода в формах авторизации и регистрации */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+textarea,
+select {
+  color: #000000 !important;
+}
+
+/* Специально для Tailwind CSS классов */
+.text-gray-900,
+.text-black {
+  color: #000000 !important;
+}
+
+/* Убеждаемся, что placeholder'ы тоже видны */
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280 !important; /* серый цвет для placeholder */
+  opacity: 1;
+}

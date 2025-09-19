@@ -1,0 +1,82 @@
+-- Создание тестовых данных для пользователя
+-- Выполните этот запрос в Supabase Dashboard → SQL Editor
+
+-- 1. Создаем настройки пользователя (если не существуют)
+INSERT INTO user_settings (user_id, language_pair_id, daily_goal, notifications_enabled, sound_enabled)
+VALUES (
+  auth.uid(),
+  'ru-es',
+  20,
+  true,
+  true
+)
+ON CONFLICT (user_id) DO NOTHING;
+
+-- 2. Создаем streak данные (если не существуют)
+INSERT INTO user_streak (user_id, current_streak, longest_streak, last_activity_date, total_days_used)
+VALUES (
+  auth.uid(),
+  1,
+  1,
+  CURRENT_DATE,
+  1
+)
+ON CONFLICT (user_id) DO NOTHING;
+
+-- 3. Добавляем существующие карточки в user_cards (если не существуют)
+INSERT INTO user_cards (user_id, card_id, state, progress, review_count, successful_reviews, direction, ease_factor, interval_days, due_at)
+SELECT 
+  auth.uid(),
+  c.id,
+  'LEARN',
+  0,
+  0,
+  0,
+  'K_TO_L',
+  2.5,
+  0,
+  now()
+FROM cards c
+WHERE c.language_pair_id = 'ru-es'
+  AND NOT EXISTS (
+    SELECT 1 FROM user_cards uc 
+    WHERE uc.user_id = auth.uid() 
+    AND uc.card_id = c.id
+  );
+
+-- 4. Проверяем результат
+SELECT 
+  'user_settings' as table_name, 
+  COUNT(*) as count 
+FROM user_settings 
+WHERE user_id = auth.uid()
+UNION ALL
+SELECT 
+  'user_streak' as table_name, 
+  COUNT(*) as count 
+FROM user_streak 
+WHERE user_id = auth.uid()
+UNION ALL
+SELECT 
+  'user_cards' as table_name, 
+  COUNT(*) as count 
+FROM user_cards 
+WHERE user_id = auth.uid();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

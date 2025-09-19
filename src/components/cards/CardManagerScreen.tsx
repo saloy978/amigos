@@ -1,36 +1,55 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Edit, Trash2, Eye, Clock } from 'lucide-react';
+import { Search, Plus, Eye, Clock } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
-import { Card, CardState } from '../../types';
+import { UserCardWithContent, CardState } from '../../types';
 import { AddWordModal } from '../modals/AddWordModal';
-import { SpacedRepetitionService } from '../../services/spacedRepetition';
+import { AIWordGeneratorModal } from '../modals/AIWordGeneratorModal';
+import { SpacedRepetitionAdapter } from '../../services/spacedRepetitionAdapter';
 import { CardService } from '../../services/cardService';
 
 interface CardManagerScreenProps {
   onBack: () => void;
+  initialFilter?: FilterType;
 }
 
-type FilterType = 'all' | 'learn' | 'know' | 'mastered';
+type FilterType = 'all' | 'learn' | 'review' | 'suspended';
 
-export const CardManagerScreen: React.FC<CardManagerScreenProps> = ({ onBack }) => {
+export const CardManagerScreen: React.FC<CardManagerScreenProps> = ({ onBack, initialFilter = 'all' }) => {
   const { state, dispatch } = useAppContext();
-  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [activeFilter, setActiveFilter] = useState<FilterType>(initialFilter);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingCard, setEditingCard] = useState<Card | null>(null);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [editingCard, setEditingCard] = useState<UserCardWithContent | null>(null);
+
+  // Обновляем активный фильтр при изменении initialFilter
+  React.useEffect(() => {
+    setActiveFilter(initialFilter);
+  }, [initialFilter]);
 
   const filters = [
     { key: 'all' as FilterType, label: 'Все', color: 'bg-gray-500' },
     { key: 'learn' as FilterType, label: 'Учить', color: 'bg-orange-500' },
-    { key: 'know' as FilterType, label: 'Знаю', color: 'bg-blue-500' },
-    { key: 'mastered' as FilterType, label: 'Выучено', color: 'bg-green-500' }
+    { key: 'review' as FilterType, label: 'Знаю', color: 'bg-blue-500' },
+    { key: 'suspended' as FilterType, label: 'Выучено', color: 'bg-green-500' }
   ];
 
   const filteredCards = useMemo(() => {
-    // Сначала обновляем статусы карточек на основе времени до показа
-    const cardsWithUpdatedStates = state.cards.map(card => 
-      SpacedRepetitionService.updateCardStateBasedOnDueTime(card)
-    );
+    // Сначала обновляем статусы карточек на основе прогресса и времени до повторения
+    const cardsWithUpdatedStates = state.cards.map(card => {
+      const updatedCard = { ...card };
+      const now = new Date();
+      
+      // Если карточка просрочена (dueAt <= now), она должна быть изучена
+      if (card.dueAt <= now) {
+        updatedCard.state = CardState.LEARN; // Учить (просроченные карточки)
+      } else if (card.progress >= 10 && card.progress < 70) {
+        updatedCard.state = CardState.REVIEW; // Знаю (прогресс 10-69%, интервал не подошел)
+      } else {
+        updatedCard.state = CardState.SUSPENDED; // Выучено (прогресс 70-100%)
+      }
+      return updatedCard;
+    });
     
     let cards = cardsWithUpdatedStates;
 
@@ -39,8 +58,8 @@ export const CardManagerScreen: React.FC<CardManagerScreenProps> = ({ onBack }) 
       const stateMap: Record<FilterType, CardState> = {
         'all': CardState.LEARN, // не используется
         'learn': CardState.LEARN,
-        'know': CardState.KNOW,
-        'mastered': CardState.MASTERED
+        'review': CardState.REVIEW,
+        'suspended': CardState.SUSPENDED
       };
       cards = cards.filter(card => card.state === stateMap[activeFilter]);
     }
@@ -54,67 +73,203 @@ export const CardManagerScreen: React.FC<CardManagerScreenProps> = ({ onBack }) 
       );
     }
 
-    // Sort by due date (overdue first, then by progress)
+    // Sort by time until next review (closest to due date first)
     return cards.sort((a, b) => {
       const now = new Date();
-      const aOverdue = a.dueAt <= now;
-      const bOverdue = b.dueAt <= now;
+      const aTimeUntil = a.dueAt.getTime() - now.getTime();
+      const bTimeUntil = b.dueAt.getTime() - now.getTime();
       
-      if (aOverdue && !bOverdue) return -1;
-      if (!aOverdue && bOverdue) return 1;
+      // Сначала просроченные карточки (отрицательное время)
+      if (aTimeUntil < 0 && bTimeUntil >= 0) return -1;
+      if (aTimeUntil >= 0 && bTimeUntil < 0) return 1;
       
-      return b.progress - a.progress;
+      // Затем по времени до повторения (меньшее время первым)
+      return aTimeUntil - bTimeUntil;
     });
   }, [state.cards, activeFilter, searchQuery]);
 
-  const getCardCounts = () => {
+  const getCardCounts = (): Record<FilterType, number> => {
+    // Используем ту же логику обновления состояний, что и в filteredCards
+    const cardsWithUpdatedStates = state.cards.map(card => {
+      const updatedCard = { ...card };
+      const now = new Date();
+      
+      // Если карточка просрочена (dueAt <= now), она должна быть изучена
+      if (card.dueAt <= now) {
+        updatedCard.state = CardState.LEARN; // Учить (просроченные карточки)
+      } else if (card.progress >= 10 && card.progress < 70) {
+        updatedCard.state = CardState.REVIEW; // Знаю (прогресс 10-69%, интервал не подошел)
+      } else {
+        updatedCard.state = CardState.SUSPENDED; // Выучено (прогресс 70-100%)
+      }
+      return updatedCard;
+    });
+
     return {
-      all: state.cards.length,
-      learn: state.cards.filter(card => card.state === CardState.LEARN).length,
-      know: state.cards.filter(card => card.state === CardState.KNOW).length,
-      mastered: state.cards.filter(card => card.state === CardState.MASTERED).length
+      all: cardsWithUpdatedStates.length,
+      learn: cardsWithUpdatedStates.filter(card => card.state === CardState.LEARN).length,
+      review: cardsWithUpdatedStates.filter(card => card.state === CardState.REVIEW).length,
+      suspended: cardsWithUpdatedStates.filter(card => card.state === CardState.SUSPENDED).length
     };
   };
 
   const cardCounts = getCardCounts();
 
-  const handleAddCard = (cardData: Omit<Card, 'id' | 'createdAt' | 'updatedAt'>) => {
-    CardService.createCard(cardData)
-      .then(newCard => {
+  const handleAddCard = async (cardData: any) => {
+    try {
+      const newCard = await CardService.addCardToUser(
+        cardData.term,
+        cardData.translation,
+        cardData.languagePairId || 'ru-es',
+        cardData.imageUrl,
+        cardData.english
+      );
+      
+      if (newCard) {
         dispatch({ type: 'ADD_CARD', payload: newCard });
-      })
-      .catch(error => {
-        console.error('Error adding card:', error);
-        alert('Ошибка при добавлении карточки');
-      });
+        
+        // Обновляем статистику пользователя после добавления карточки
+        const updatedCards = [...state.cards, newCard];
+        const masteredCards = updatedCards.filter(card => card.progress >= 70).length;
+        const learnedCards = updatedCards.filter(card => card.progress >= 50).length;
+        const dueCards = SpacedRepetitionAdapter.getDueCards(updatedCards);
+        
+        dispatch({
+          type: 'UPDATE_USER_STATS',
+          payload: {
+            totalCards: updatedCards.length,
+            learnedCards,
+            masteredCards,
+            reviewsDue: dueCards.length
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error adding card:', error);
+      alert('Ошибка при добавлении карточки');
+    }
   };
 
-  const handleEditCard = (cardData: Omit<Card, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (!editingCard) return;
-    
-    const updatedCard: Card = {
-      ...cardData,
-      id: editingCard.id,
-      createdAt: editingCard.createdAt,
-      updatedAt: new Date()
-    };
-    
-    CardService.updateCard(updatedCard)
-      .then(savedCard => {
-        dispatch({ type: 'UPDATE_CARD', payload: savedCard });
-        setEditingCard(null);
-      })
-      .catch(error => {
-        console.error('Error updating card:', error);
-        alert('Ошибка при обновлении карточки');
+  const handleAddAICards = async (cardsData: any[]) => {
+    try {
+      // Добавляем все карточки через CardService
+      const newCards = await Promise.all(
+        cardsData.map(cardData => 
+          CardService.addCardToUser(
+            cardData.term,
+            cardData.translation,
+            cardData.languagePairId || 'ru-es',
+            cardData.imageUrl,
+            cardData.english
+          )
+        )
+      );
+      
+      // Добавляем все карточки в состояние
+      newCards.forEach(newCard => {
+        if (newCard) {
+          dispatch({ type: 'ADD_CARD', payload: newCard });
+        }
       });
+      
+      // Обновляем статистику пользователя после добавления карточек
+      const validNewCards = newCards.filter(c => c !== null) as UserCardWithContent[];
+      const updatedCards = [...state.cards, ...validNewCards];
+      const masteredCards = updatedCards.filter(card => card.progress >= 70).length;
+      const learnedCards = updatedCards.filter(card => card.progress >= 50).length;
+      const dueCards = SpacedRepetitionAdapter.getDueCards(updatedCards);
+      
+      dispatch({
+        type: 'UPDATE_USER_STATS',
+        payload: {
+          totalCards: updatedCards.length,
+          learnedCards,
+          masteredCards,
+          reviewsDue: dueCards.length
+        }
+      });
+    } catch (error) {
+      console.error('Error adding AI cards:', error);
+      alert('Ошибка при добавлении карточек');
+    }
+  };
+
+  const handleEditCard = async (cardData: any) => {
+    console.log('🔄 CardManager: handleEditCard called');
+    console.log('🔄 CardManager: editingCard:', editingCard);
+    console.log('🔄 CardManager: cardData:', cardData);
+    
+    if (!editingCard) {
+      console.log('❌ CardManager: No editing card found');
+      return;
+    }
+    
+    try {
+      console.log('🔄 CardManager: Starting card update process');
+      console.log('🔄 CardManager: Card ID:', editingCard.cardId);
+      console.log('🔄 CardManager: New data:', {
+        term: cardData.term,
+        translation: cardData.translation,
+        imageUrl: cardData.imageUrl,
+        english: cardData.english
+      });
+      
+      // Update card content in the database
+      console.log('🔄 CardManager: Calling CardService.updateCardContent...');
+      await CardService.updateCardContent(
+        editingCard.cardId,
+        cardData.term,
+        cardData.translation,
+        cardData.imageUrl,
+        cardData.english
+      );
+      console.log('✅ CardManager: CardService.updateCardContent completed');
+      
+      // Update the card in the local state
+      const updatedCard = {
+        ...editingCard,
+        term: cardData.term.trim(),
+        translation: cardData.translation.trim(),
+        imageUrl: cardData.imageUrl?.trim() || undefined,
+        english: cardData.english?.trim() || undefined
+      };
+      console.log('🔄 CardManager: Updated card object:', updatedCard);
+      
+      // Update the card in the context
+      console.log('🔄 CardManager: Dispatching UPDATE_CARD action...');
+      dispatch({ type: 'UPDATE_CARD', payload: updatedCard });
+      console.log('✅ CardManager: UPDATE_CARD action dispatched');
+      
+      console.log('✅ CardManager: Card updated successfully');
+      
+      // Reload cards to get updated data (in case of merge)
+      console.log('🔄 CardManager: Reloading cards to get updated data...');
+      const updatedCards = await CardService.getUserCards();
+      dispatch({ type: 'SET_CARDS', payload: updatedCards });
+      console.log('✅ CardManager: Cards reloaded:', updatedCards.length);
+      
+      setEditingCard(null);
+      console.log('✅ CardManager: Modal closed');
+    } catch (error) {
+      console.error('❌ CardManager: Error updating card:', error);
+      console.error('❌ CardManager: Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined
+      });
+      
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      console.error('❌ CardManager: Alert error message:', errorMessage);
+      
+      alert('Ошибка при сохранении изменений карточки: ' + errorMessage);
+    }
   };
 
   const handleDeleteCard = (cardId: string) => {
     if (confirm('Вы уверены, что хотите удалить эту карточку?')) {
-      CardService.deleteCard(cardId)
+      CardService.removeCardFromUser(parseInt(cardId))
         .then(() => {
-          const updatedCards = state.cards.filter(card => card.id !== cardId);
+          const updatedCards = state.cards.filter(card => card.cardId.toString() !== cardId);
           dispatch({ type: 'SET_CARDS', payload: updatedCards });
         })
         .catch(error => {
@@ -124,20 +279,8 @@ export const CardManagerScreen: React.FC<CardManagerScreenProps> = ({ onBack }) 
     }
   };
 
-  const formatTimeUntil = (date: Date): string => {
-    const now = new Date();
-    const diff = date.getTime() - now.getTime();
-    
-    if (diff <= 0) return 'Сейчас';
-    
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) return `${days}д`;
-    if (hours > 0) return `${hours}ч`;
-    if (minutes > 0) return `${minutes}м`;
-    return 'Сейчас';
+  const formatTimeUntil = (userCard: UserCardWithContent): string => {
+    return SpacedRepetitionAdapter.getTimeUntilNext(userCard);
   };
 
   const getProgressColor = (progress: number): string => {
@@ -227,16 +370,29 @@ export const CardManagerScreen: React.FC<CardManagerScreenProps> = ({ onBack }) 
               <p className="text-gray-600 mb-4">
                 {searchQuery 
                   ? 'Попробуйте изменить поисковый запрос'
-                  : 'Добавьте первую карточку для изучения'
+                  : state.cards.length === 0 
+                    ? 'Добавьте первую карточку для изучения'
+                    : `Нет карточек в категории "${filters.find(f => f.key === activeFilter)?.label}"`
                 }
               </p>
-              {!searchQuery && (
-                <button
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                >
-                  Добавить карточку
-                </button>
+              {!searchQuery && (state.cards.length === 0 || (activeFilter === 'learn' && cardCounts.learn === 0)) && (
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => setIsAIModalOpen(true)}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Добавить 10 карточек с помощью ИИ
+                  </button>
+                  <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  >
+                    Добавить карточку вручную
+                  </button>
+                </div>
               )}
             </div>
           ) : (
@@ -246,7 +402,7 @@ export const CardManagerScreen: React.FC<CardManagerScreenProps> = ({ onBack }) 
                 
                 return (
                   <div
-                    key={card.id}
+                    key={card.cardId}
                     className={`bg-white border-2 rounded-xl p-4 transition-all ${
                       isOverdue ? 'border-orange-200 bg-orange-50' : 'border-gray-200'
                     }`}
@@ -263,15 +419,33 @@ export const CardManagerScreen: React.FC<CardManagerScreenProps> = ({ onBack }) 
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setEditingCard(card)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-2 bg-transparent hover:bg-blue-50 rounded-lg transition-all transform hover:scale-105"
                         >
-                          <Edit className="w-4 h-4" />
+                          <img 
+                            src="/assets/Edit.png" 
+                            alt="Редактировать" 
+                            className="w-5 h-5 object-cover rounded"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              target.parentElement!.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>';
+                            }}
+                          />
                         </button>
                         <button
-                          onClick={() => handleDeleteCard(card.id)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          onClick={() => handleDeleteCard(card.cardId.toString())}
+                          className="p-2 bg-transparent hover:bg-red-50 rounded-lg transition-all transform hover:scale-105"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <img 
+                            src="/assets/Delete.png" 
+                            alt="Удалить" 
+                            className="w-5 h-5 object-cover rounded"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              target.parentElement!.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+                            }}
+                          />
                         </button>
                       </div>
                     </div>
@@ -287,7 +461,7 @@ export const CardManagerScreen: React.FC<CardManagerScreenProps> = ({ onBack }) 
                         <div className="flex items-center gap-1 text-gray-500">
                           <Clock className="w-3 h-3" />
                           <span className="text-xs">
-                            {isOverdue ? 'Просрочено' : formatTimeUntil(card.dueAt)}
+                            {isOverdue ? 'Просрочено' : formatTimeUntil(card)}
                           </span>
                         </div>
                       </div>
@@ -318,7 +492,7 @@ export const CardManagerScreen: React.FC<CardManagerScreenProps> = ({ onBack }) 
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           onSave={handleAddCard}
-          existingCards={state.cards}
+          existingCards={[]}
         />
 
         {/* Edit Word Modal */}
@@ -327,6 +501,14 @@ export const CardManagerScreen: React.FC<CardManagerScreenProps> = ({ onBack }) 
           onClose={() => setEditingCard(null)}
           onSave={handleEditCard}
           editCard={editingCard}
+          existingCards={[]}
+        />
+
+        {/* AI Word Generator Modal */}
+        <AIWordGeneratorModal
+          isOpen={isAIModalOpen}
+          onClose={() => setIsAIModalOpen(false)}
+          onSave={handleAddAICards}
           existingCards={state.cards}
         />
       </div>

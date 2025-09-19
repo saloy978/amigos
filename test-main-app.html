@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Main App Flow</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test Main App Flow</h1>
+    <button id="testBtn">Test Main App</button>
+    <div id="result"></div>
+
+    <script>
+        const supabaseUrl = 'http://127.0.0.1:54321';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Simulate the exact flow from the main app
+        async function simulateMainAppFlow() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing main app flow...<br>';
+            
+            try {
+                // Step 1: Check if Supabase is configured (like in App.tsx)
+                resultDiv.innerHTML += 'Step 1: Checking Supabase configuration...<br>';
+                if (!supabase) {
+                    resultDiv.innerHTML += '❌ Supabase not configured<br>';
+                    return;
+                }
+                resultDiv.innerHTML += '✅ Supabase configured correctly<br>';
+                
+                // Step 2: Check authentication session (like in checkAuthSession)
+                resultDiv.innerHTML += '<br>Step 2: Checking authentication session...<br>';
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    resultDiv.innerHTML += `❌ Error checking auth session: ${error.message}<br>`;
+                    return;
+                }
+                
+                if (session?.user) {
+                    resultDiv.innerHTML += `✅ Session found: User ID ${session.user.id}<br>`;
+                } else {
+                    resultDiv.innerHTML += '🔄 No session found, attempting anonymous sign-in...<br>';
+                    // Auto-authenticate like in the fixed App.tsx
+                    const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+                    if (authError) {
+                        resultDiv.innerHTML += `❌ Error signing in anonymously: ${authError.message}<br>`;
+                        return;
+                    } else {
+                        resultDiv.innerHTML += `✅ Anonymous sign-in successful: ${authData.user.id}<br>`;
+                    }
+                }
+                
+                // Step 3: Load cards from database (like in loadCardsFromDatabase)
+                resultDiv.innerHTML += '<br>Step 3: Loading cards from database...<br>';
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    resultDiv.innerHTML += '❌ User not authenticated<br>';
+                    return;
+                }
+                
+                const { data: cards, error: cardsError } = await supabase
+                    .from('user_cards_with_content')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false });
+                
+                if (cardsError) {
+                    resultDiv.innerHTML += `❌ Error loading cards: ${cardsError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `✅ Loaded ${cards.length} cards from database<br>`;
+                }
+                
+                // Step 4: Simulate adding lesson words (like in addCardsFromLesson)
+                resultDiv.innerHTML += '<br>Step 4: Simulating lesson words addition...<br>';
+                
+                const lessonWords = [
+                    { term: 'hola', translation: 'привет', english: 'hello' },
+                    { term: 'buenos días', translation: 'доброе утро', english: 'good morning' }
+                ];
+                
+                let addedCount = 0;
+                for (let i = 0; i < lessonWords.length; i++) {
+                    const word = lessonWords[i];
+                    const lessonOrder = i + 1;
+                    
+                    resultDiv.innerHTML += `Adding word ${i + 1}/${lessonWords.length}: "${word.term}"<br>`;
+                    
+                    const { data, error } = await supabase.rpc('add_card_to_user_with_lesson', {
+                        p_language_pair_id: 'ru-es',
+                        p_term: word.term,
+                        p_translation: word.translation,
+                        p_image_url: null,
+                        p_english: word.english,
+                        p_lesson_id: 'intro',
+                        p_lesson_order: lessonOrder
+                    });
+                    
+                    if (error) {
+                        resultDiv.innerHTML += `❌ Error: ${error.message}<br>`;
+                    } else {
+                        resultDiv.innerHTML += `✅ Added: ${JSON.stringify(data)}<br>`;
+                        addedCount++;
+                    }
+                }
+                
+                // Step 5: Reload cards to verify they were added
+                resultDiv.innerHTML += '<br>Step 5: Reloading cards to verify...<br>';
+                const { data: updatedCards, error: updatedCardsError } = await supabase
+                    .from('user_cards_with_content')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false });
+                
+                if (updatedCardsError) {
+                    resultDiv.innerHTML += `❌ Error reloading cards: ${updatedCardsError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `✅ Reloaded ${updatedCards.length} cards<br>`;
+                    if (updatedCards.length > cards.length) {
+                        resultDiv.innerHTML += `🎉 SUCCESS: Cards were added! (+${updatedCards.length - cards.length} cards)<br>`;
+                    } else {
+                        resultDiv.innerHTML += `❌ PROBLEM: No new cards were added<br>`;
+                    }
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<br>❌ Exception: ${error.message}<br>`;
+                console.error('Exception:', error);
+            }
+        }
+        
+        document.getElementById('testBtn').addEventListener('click', simulateMainAppFlow);
+    </script>
+</body>
+</html>
+
+
+

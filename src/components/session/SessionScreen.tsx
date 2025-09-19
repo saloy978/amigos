@@ -2,12 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { CardDisplay } from './CardDisplay';
 import { SessionProgress } from './SessionProgress';
 import { AddWordModal } from '../modals/AddWordModal';
-import { Home, Trash2 } from 'lucide-react';
+import { CardDisplaySettingsModal } from '../modals/CardDisplaySettingsModal';
+import { Home, Trash2, Settings } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
-import { SpacedRepetitionService } from '../../services/spacedRepetition';
-import { ReviewResult, DisplayMode, ReviewDirection, Card } from '../../types';
+import { SpacedRepetitionAdapter } from '../../services/spacedRepetitionAdapter';
+import { ReviewResult, DisplayMode, ReviewDirection, UserCardWithContent } from '../../types';
 import { UserService } from '../../services/userService';
 import { CardService } from '../../services/cardService';
+import { useCardDisplaySettings } from '../../hooks/useCardDisplaySettings';
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url?: string;
+  level: string;
+  created_at: Date;
+  updated_at: Date;
+}
 
 interface SessionScreenProps {
   onEndSession: () => void;
@@ -16,6 +28,7 @@ interface SessionScreenProps {
 
 export const SessionScreen: React.FC<SessionScreenProps> = ({ onEndSession, onProfileClick }) => {
   const { state, dispatch } = useAppContext();
+  const { getDisplayMode, openSettingsModal, isModalOpen, closeSettingsModal, handleSaveSettings } = useCardDisplaySettings();
   const [sessionStartTime] = useState(new Date());
   const [currentDisplayMode, setCurrentDisplayMode] = useState<DisplayMode>(DisplayMode.WORD);
   const [currentDirection, setCurrentDirection] = useState<ReviewDirection>(ReviewDirection.KNOWN_TO_LEARNING);
@@ -24,32 +37,81 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({ onEndSession, onPr
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [currentUser] = useState(() => {
-    return UserService.getCurrentUser();
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // Load user data from Supabase when component mounts
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        // Try to get user from Supabase database first
+        let user = await UserService.getCurrentUserFromDB();
+        
+        // If no user in database, try localStorage as fallback
+        if (!user) {
+          user = UserService.getCurrentUser();
+        }
+        
+        // If still no user, create one from auth data
+        if (!user) {
+          user = await UserService.createOrUpdateUserInDB({});
+        }
+        
+        if (user) {
+          setCurrentUser(user);
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        // Fallback to localStorage
+        const user = UserService.getCurrentUser();
+        if (user) {
+          setCurrentUser(user);
+        }
+      }
+    };
+    
+    loadUserData();
+  }, []);
 
   useEffect(() => {
-    // Get next due card when session starts or current card is updated
+    // Get next card when session starts or current card is updated
     if (!state.currentCard) {
-      const dueCards = SpacedRepetitionService.getDueCards(state.cards);
-      if (dueCards.length > 0) {
-        const nextCard = dueCards[0];
+      // Try to get the current lesson ID from localStorage first, then from recent cards
+      let currentLessonId = localStorage.getItem('currentLessonId') || undefined;
+      
+      if (!currentLessonId) {
+        const recentLessonCards = state.cards
+          .filter(card => (card as any).lessonId && (card as any).lessonOrder !== null)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        
+        currentLessonId = recentLessonCards.length > 0 ? (recentLessonCards[0] as any).lessonId : undefined;
+      }
+      
+      // Use the new logic that prioritizes lesson order for new cards
+      const nextCard = SpacedRepetitionAdapter.getNextCardToShow(state.cards, currentLessonId);
+      
+      if (nextCard) {
         dispatch({ type: 'SET_CURRENT_CARD', payload: nextCard });
         
-        // Set display mode and direction for the card
-        const displayMode = SpacedRepetitionService.getDisplayMode(nextCard);
-        const direction = SpacedRepetitionService.getReviewDirection(nextCard);
+        // Set display mode and direction based on card progress
+        const displayMode = getDisplayMode(nextCard.progress, nextCard.reviewCount) as DisplayMode;
+        const direction = SpacedRepetitionAdapter.getReviewDirection(nextCard);
         
         setCurrentDisplayMode(displayMode);
         setCurrentDirection(direction);
       } else {
         // No more cards to review
+        // Clear the current lesson ID if we were studying lesson cards
+        const currentLessonId = localStorage.getItem('currentLessonId');
+        if (currentLessonId) {
+          console.log('🎯 Finished studying lesson cards, clearing currentLessonId');
+          localStorage.removeItem('currentLessonId');
+        }
         handleEndSession();
       }
     }
   }, [state.currentCard, state.cards]);
 
-  const handleCardReview = (result: ReviewResult) => {
+  const handleCardReview = async (result: ReviewResult) => {
     if (!state.currentCard) return;
 
     // Add points for correct answers
@@ -61,21 +123,11 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({ onEndSession, onPr
       // Show points animation
       setTimeout(() => setPointsGained(0), 2000);
     }
-    // Process the review and update the card
-    const updatedCard = SpacedRepetitionService.processReview(state.currentCard, result);
-    
-    // Save updated card to database
-    CardService.updateCard(updatedCard)
-      .then(savedCard => {
-        dispatch({ type: 'UPDATE_CARD', payload: savedCard });
-      })
-      .catch(error => {
-        console.error('Error updating card after review:', error);
-        // Still update in memory even if database save fails
-        dispatch({ type: 'UPDATE_CARD', payload: updatedCard });
-      });
 
-    // Update session stats
+    // Process the review and update the card
+    const updatedCard = SpacedRepetitionAdapter.processReview(state.currentCard, result);
+    
+    // Update session stats first
     dispatch({
       type: 'UPDATE_SESSION_STATS',
       payload: {
@@ -85,8 +137,22 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({ onEndSession, onPr
       }
     });
 
+    // Update card in memory immediately
+    dispatch({ type: 'UPDATE_CARD', payload: updatedCard });
+
     // Clear current card to trigger loading of next card
     dispatch({ type: 'SET_CURRENT_CARD', payload: null });
+
+    // Save to database in background (don't wait for it)
+    CardService.updateUserCard(updatedCard)
+      .then(savedCard => {
+        // Update with the saved version from database
+        dispatch({ type: 'UPDATE_CARD', payload: savedCard });
+      })
+      .catch(error => {
+        console.error('Error updating card after review:', error);
+        // Card is already updated in memory, so we don't need to do anything
+      });
   };
 
   const handleEndSession = () => {
@@ -94,9 +160,9 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({ onEndSession, onPr
     const sessionTimeMinutes = Math.floor(sessionTime / 60000);
 
     // Update user stats
-    const masteredCards = state.cards.filter(card => card.progress >= 90).length;
-    const learnedCards = state.cards.filter(card => card.progress >= 60).length;
-    const dueCards = SpacedRepetitionService.getDueCards(state.cards);
+    const masteredCards = state.cards.filter(card => card.progress >= 70).length;
+    const learnedCards = state.cards.filter(card => card.progress >= 50).length;
+    const dueCards = SpacedRepetitionAdapter.getDueCards(state.cards);
 
     dispatch({
       type: 'UPDATE_USER_STATS',
@@ -113,48 +179,100 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({ onEndSession, onPr
     onEndSession();
   };
 
-  const handleEditCard = (cardData: Omit<Card, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleEditCard = async (cardData: Omit<UserCardWithContent, 'userId' | 'cardId' | 'createdAt' | 'updatedAt'>) => {
     if (!state.currentCard) return;
     
-    const updatedCard: Card = {
-      ...cardData,
-      id: state.currentCard.id,
-      createdAt: state.currentCard.createdAt,
-      updatedAt: new Date()
-    };
-    
-    CardService.updateCard(updatedCard)
-      .then(savedCard => {
-        dispatch({ type: 'UPDATE_CARD', payload: savedCard });
-        dispatch({ type: 'SET_CURRENT_CARD', payload: savedCard });
-        setIsEditModalOpen(false);
-      })
-      .catch(error => {
-        console.error('Error updating card:', error);
-        alert('Ошибка при обновлении карточки');
+    try {
+      console.log('🔄 SessionScreen: handleEditCard called');
+      console.log('🔄 SessionScreen: Card ID:', state.currentCard.cardId);
+      console.log('🔄 SessionScreen: New data:', {
+        term: cardData.term,
+        translation: cardData.translation,
+        imageUrl: cardData.imageUrl,
+        english: cardData.english
       });
+      
+      // Update card content in the database
+      console.log('🔄 SessionScreen: Calling CardService.updateCardContent...');
+      await CardService.updateCardContent(
+        state.currentCard.cardId,
+        cardData.term,
+        cardData.translation,
+        cardData.imageUrl,
+        cardData.english
+      );
+      console.log('✅ SessionScreen: CardService.updateCardContent completed');
+      
+      // Update the card in the local state
+      const updatedCard = {
+        ...state.currentCard,
+        term: cardData.term.trim(),
+        translation: cardData.translation.trim(),
+        imageUrl: cardData.imageUrl?.trim() || undefined,
+        english: cardData.english?.trim() || undefined,
+        updatedAt: new Date()
+      };
+      console.log('🔄 SessionScreen: Updated card object:', updatedCard);
+      
+      // Update the card in the context
+      console.log('🔄 SessionScreen: Dispatching UPDATE_CARD action...');
+      dispatch({ type: 'UPDATE_CARD', payload: updatedCard });
+      dispatch({ type: 'SET_CURRENT_CARD', payload: updatedCard });
+      console.log('✅ SessionScreen: UPDATE_CARD action dispatched');
+      
+      console.log('✅ SessionScreen: Card updated successfully');
+      
+      // Reload cards to get updated data (in case of merge)
+      console.log('🔄 SessionScreen: Reloading cards to get updated data...');
+      const updatedCards = await CardService.getUserCards();
+      dispatch({ type: 'SET_CARDS', payload: updatedCards });
+      console.log('✅ SessionScreen: Cards reloaded:', updatedCards.length);
+      
+      setIsEditModalOpen(false);
+      console.log('✅ SessionScreen: Modal closed');
+    } catch (error) {
+      console.error('❌ SessionScreen: Error updating card:', error);
+      console.error('❌ SessionScreen: Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined
+      });
+      
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      console.error('❌ SessionScreen: Alert error message:', errorMessage);
+      
+      alert('Ошибка при сохранении изменений карточки: ' + errorMessage);
+    }
   };
 
-  const handleAddCard = (cardData: Omit<Card, 'id' | 'createdAt' | 'updatedAt'>) => {
-    CardService.createCard(cardData)
-      .then(newCard => {
+  const handleAddCard = async (cardData: Omit<UserCardWithContent, 'userId' | 'cardId' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const newCard = await CardService.addCardToUser(
+        cardData.term,
+        cardData.translation,
+        cardData.languagePairId || 'ru-es',
+        cardData.imageUrl,
+        cardData.english
+      );
+      
+      if (newCard) {
         dispatch({ type: 'ADD_CARD', payload: newCard });
         setIsAddModalOpen(false);
-      })
-      .catch(error => {
-        console.error('Error adding card:', error);
-        alert('Ошибка при добавлении карточки');
-      });
+      }
+    } catch (error) {
+      console.error('Error adding card:', error);
+      alert('Ошибка при добавлении карточки');
+    }
   };
 
   const handleDeleteCard = () => {
     if (!state.currentCard) return;
     
     if (showDeleteConfirm) {
-      CardService.deleteCard(state.currentCard.id)
+      CardService.removeCardFromUser(state.currentCard.cardId)
         .then(() => {
           // Remove the card from the cards array
-          const updatedCards = state.cards.filter(card => card.id !== state.currentCard!.id);
+          const updatedCards = state.cards.filter(card => card.cardId !== state.currentCard!.cardId);
           
           // Update the cards in the context
           dispatch({ type: 'SET_CARDS', payload: updatedCards });
@@ -177,7 +295,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({ onEndSession, onPr
       setTimeout(() => setShowDeleteConfirm(false), 3000);
     }
   };
-  const totalDueCards = SpacedRepetitionService.getDueCards(state.cards).length;
+  const totalDueCards = SpacedRepetitionAdapter.getDueCards(state.cards).length;
   const remainingCards = totalDueCards - state.sessionStats.cardsReviewed;
 
   return (
@@ -185,12 +303,21 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({ onEndSession, onPr
       <div className="max-w-md mx-auto bg-gray-200 min-h-screen flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4">
-          <button
-            onClick={handleEndSession}
-            className="p-2 text-gray-600 hover:text-gray-900"
-          >
-            <Home className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleEndSession}
+              className="p-2 text-gray-600 hover:text-gray-900"
+            >
+              <Home className="w-6 h-6" />
+            </button>
+            <button
+              onClick={openSettingsModal}
+              className="p-2 text-gray-600 hover:text-gray-900"
+              title="Настройки отображения карточек"
+            >
+              <Settings className="w-6 h-6" />
+            </button>
+          </div>
           
           <div className="text-center">
             <div className="text-lg font-bold text-gray-800">
@@ -221,14 +348,80 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({ onEndSession, onPr
           </div>
         </div>
 
-        <div className="flex-1 flex items-center justify-center px-4 pt-1 pb-4 relative">
+        <div className="flex-1 flex flex-col items-center px-4 pt-4 pb-4 relative">
           {state.currentCard ? (
-            <CardDisplay
-              card={state.currentCard}
-              displayMode={currentDisplayMode}
-              direction={currentDirection}
-              onReview={handleCardReview}
-            />
+            <div className="w-full flex flex-col items-center">
+              <CardDisplay
+                card={state.currentCard}
+                displayMode={currentDisplayMode}
+                direction={currentDirection}
+                onReview={handleCardReview}
+              />
+              
+              {/* Management buttons - positioned right under the answer buttons */}
+              <div className="w-full max-w-sm mt-6">
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="p-3 bg-transparent hover:bg-white/10 rounded-2xl transition-all transform hover:scale-105"
+                    disabled={!state.currentCard}
+                  >
+                    <img 
+                      src="/assets/Edit.png" 
+                      alt="Редактировать" 
+                      className="w-8 h-8 object-cover rounded-lg"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.parentElement!.innerHTML = '<span class="text-blue-600 text-xl">✏️</span>';
+                      }}
+                    />
+                  </button>
+                  
+                  <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="p-3 bg-transparent hover:bg-white/10 rounded-2xl transition-all transform hover:scale-105"
+                  >
+                    <img 
+                      src="/assets/Add.png" 
+                      alt="Добавить" 
+                      className="w-8 h-8 object-cover rounded-lg"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.parentElement!.innerHTML = '<span class="text-green-600 text-xl">➕</span>';
+                      }}
+                    />
+                  </button>
+                  
+                  <div className="relative">
+                    <button
+                      onClick={handleDeleteCard}
+                      className={`p-3 bg-transparent hover:bg-white/10 rounded-2xl transition-all transform hover:scale-105 ${
+                        showDeleteConfirm ? 'animate-pulse' : ''
+                      }`}
+                      disabled={!state.currentCard}
+                    >
+                      <img 
+                        src="/assets/Delete.png" 
+                        alt="Удалить" 
+                        className="w-8 h-8 object-cover rounded-lg"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = '<span class="text-red-600 text-xl">🗑️</span>';
+                        }}
+                      />
+                    </button>
+                    {showDeleteConfirm && (
+                      <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-red-600 font-medium animate-pulse whitespace-nowrap">
+                        Подтвердить
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -254,54 +447,15 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({ onEndSession, onPr
           existingCards={state.cards}
         />
 
+        {/* Card Display Settings Modal */}
+        <CardDisplaySettingsModal
+          isOpen={isModalOpen}
+          onClose={closeSettingsModal}
+          onSave={handleSaveSettings}
+        />
+
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-transparent px-6 py-3">
-        <div className="flex items-center gap-6">
-          <button
-            onClick={() => setIsEditModalOpen(true)}
-            className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-blue-600 transition-colors"
-            disabled={!state.currentCard}
-          >
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <span className="text-blue-600 text-lg">✏️</span>
-            </div>
-            <span className="text-xs font-medium">Редактировать</span>
-          </button>
-          
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-green-600 transition-colors"
-          >
-            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-              <span className="text-green-600 text-lg">➕</span>
-            </div>
-            <span className="text-xs font-medium">Добавить</span>
-          </button>
-          
-          <button
-            onClick={handleDeleteCard}
-            className={`flex flex-col items-center gap-1 p-2 transition-colors ${
-              showDeleteConfirm 
-                ? 'text-red-600' 
-                : 'text-gray-600 hover:text-red-600'
-            }`}
-            disabled={!state.currentCard}
-          >
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-              showDeleteConfirm 
-                ? 'bg-red-200 animate-pulse' 
-                : 'bg-red-100'
-            }`}>
-              <span className="text-red-600 text-lg">🗑️</span>
-            </div>
-            <span className="text-xs font-medium">
-              {showDeleteConfirm ? 'Подтвердить' : 'Удалить'}
-            </span>
-          </button>
-        </div>
-      </div>
     </div>
   );
 };

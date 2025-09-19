@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Data Loading</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test Data Loading</h1>
+    <button id="testBtn">Test Load Cards</button>
+    <div id="result"></div>
+
+    <script>
+        const supabaseUrl = 'http://127.0.0.1:54321';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Sign in anonymously
+                const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+                
+                if (authError) {
+                    resultDiv.innerHTML = `Auth Error: ${authError.message}`;
+                    return;
+                }
+                
+                resultDiv.innerHTML = `Auth Success! User ID: ${authData.user.id}<br>`;
+                
+                // Test 1: Check if cards exist in user_cards_with_content
+                resultDiv.innerHTML += 'Checking user_cards_with_content...<br>';
+                const { data: userCards, error: userCardsError } = await supabase
+                    .from('user_cards_with_content')
+                    .select('*')
+                    .eq('user_id', authData.user.id);
+                
+                if (userCardsError) {
+                    resultDiv.innerHTML += `User cards error: ${userCardsError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `User cards found: ${userCards.length}<br>`;
+                    if (userCards.length > 0) {
+                        resultDiv.innerHTML += `First card: ${JSON.stringify(userCards[0])}<br>`;
+                    }
+                }
+                
+                // Test 2: Check if cards exist in cards table
+                resultDiv.innerHTML += 'Checking cards table...<br>';
+                const { data: allCards, error: allCardsError } = await supabase
+                    .from('cards')
+                    .select('*')
+                    .limit(5);
+                
+                if (allCardsError) {
+                    resultDiv.innerHTML += `All cards error: ${allCardsError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `Total cards in database: ${allCards.length}<br>`;
+                    if (allCards.length > 0) {
+                        resultDiv.innerHTML += `First card: ${JSON.stringify(allCards[0])}<br>`;
+                    }
+                }
+                
+                // Test 3: Check if user_cards exist
+                resultDiv.innerHTML += 'Checking user_cards table...<br>';
+                const { data: userCardsTable, error: userCardsTableError } = await supabase
+                    .from('user_cards')
+                    .select('*')
+                    .eq('user_id', authData.user.id);
+                
+                if (userCardsTableError) {
+                    resultDiv.innerHTML += `User cards table error: ${userCardsTableError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `User cards in table: ${userCardsTable.length}<br>`;
+                    if (userCardsTable.length > 0) {
+                        resultDiv.innerHTML += `First user card: ${JSON.stringify(userCardsTable[0])}<br>`;
+                    }
+                }
+                
+                // Test 4: Check if view exists
+                resultDiv.innerHTML += 'Checking if view exists...<br>';
+                const { data: viewTest, error: viewError } = await supabase
+                    .from('user_cards_with_content')
+                    .select('count')
+                    .limit(1);
+                
+                if (viewError) {
+                    resultDiv.innerHTML += `View error: ${viewError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `View exists and accessible<br>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `Exception: ${error.message}`;
+                console.error('Exception:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+

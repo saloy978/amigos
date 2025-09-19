@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Logger</title>
+</head>
+<body>
+    <h1>Test Logger</h1>
+    <button id="testBtn">Test Logger</button>
+    <div id="result"></div>
+
+    <script>
+        // Simple logger implementation
+        class Logger {
+            constructor() {
+                this.logServerUrl = 'http://localhost:3001/log';
+            }
+
+            async sendToServer(level, message, data) {
+                try {
+                    const response = await fetch(this.logServerUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            level: level,
+                            message: message,
+                            data: data,
+                            timestamp: new Date().toISOString(),
+                            source: 'test-browser'
+                        })
+                    });
+
+                    if (response.ok) {
+                        console.log('Log sent to server successfully');
+                    } else {
+                        console.error('Failed to send log to server');
+                    }
+                } catch (error) {
+                    console.error('Error sending log to server:', error);
+                }
+            }
+
+            log(message, data) {
+                console.log(message, data);
+                this.sendToServer('log', message, data);
+            }
+
+            info(message, data) {
+                console.info(message, data);
+                this.sendToServer('info', message, data);
+            }
+
+            warn(message, data) {
+                console.warn(message, data);
+                this.sendToServer('warn', message, data);
+            }
+
+            error(message, data) {
+                console.error(message, data);
+                this.sendToServer('error', message, data);
+            }
+        }
+
+        const logger = new Logger();
+
+        document.getElementById('testBtn').addEventListener('click', () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing logger...<br>';
+
+            logger.info('Test info message', { test: 'data' });
+            logger.warn('Test warning message', { warning: 'test' });
+            logger.error('Test error message', { error: 'test' });
+            logger.log('Test log message', { log: 'test' });
+
+            resultDiv.innerHTML += 'Logs sent! Check the log server and browser-logs.txt file.<br>';
+        });
+    </script>
+</body>
+</html>
+
+
+

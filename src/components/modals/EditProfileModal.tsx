@@ -4,7 +4,7 @@ import { X, User, Mail, Camera } from 'lucide-react';
 interface EditProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (userData: { name: string; email: string; level: string; avatar_url?: string }) => void;
+  onSave: (userData: { name: string; email: string; avatar_url?: string }) => void;
   currentUser: {
     name: string;
     email: string;
@@ -13,14 +13,6 @@ interface EditProfileModalProps {
   };
 }
 
-const LEVELS = [
-  { value: 'Beginner', label: 'Beginner • A1' },
-  { value: 'Elementary', label: 'Elementary • A2' },
-  { value: 'Intermediate', label: 'Intermediate • B1' },
-  { value: 'Upper-Intermediate', label: 'Upper-Intermediate • B2' },
-  { value: 'Advanced', label: 'Advanced • C1' },
-  { value: 'Proficient', label: 'Proficient • C2' }
-];
 
 export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   isOpen,
@@ -31,7 +23,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    level: 'Beginner',
     avatar_url: '',
     avatarFile: null as File | null
   });
@@ -44,7 +35,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setFormData({
         name: currentUser.name || '',
         email: currentUser.email || '',
-        level: currentUser.level || 'Beginner',
         avatar_url: currentUser.avatar_url || '',
         avatarFile: null
       });
@@ -122,7 +112,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       await onSave({
         name: formData.name.trim(),
         email: formData.email.trim(),
-        level: formData.level,
         avatar_url: avatarUrl || undefined
       });
       onClose();
@@ -246,24 +235,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             )}
           </div>
 
-          {/* Level Field */}
-          <div>
-            <label htmlFor="level" className="block text-sm font-medium text-gray-700 mb-2">
-              Уровень языка
-            </label>
-            <select
-              id="level"
-              value={formData.level}
-              onChange={(e) => handleInputChange('level', e.target.value)}
-              className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            >
-              {LEVELS.map((level) => (
-                <option key={level.value} value={level.value}>
-                  {level.label}
-                </option>
-              ))}
-            </select>
-          </div>
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">

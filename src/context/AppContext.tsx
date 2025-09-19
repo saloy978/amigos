@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { Card, LanguagePair, SessionStats, UserStats } from '../types';
+import { UserCardWithContent, LanguagePair, SessionStats, UserStats } from '../types';
 
 interface AppState {
   languagePairs: LanguagePair[];
   currentLanguagePair: LanguagePair | null;
-  cards: Card[];
-  currentCard: Card | null;
+  cards: UserCardWithContent[];
+  currentCard: UserCardWithContent | null;
   sessionStats: SessionStats;
   userStats: UserStats;
   isSessionActive: boolean;
@@ -14,14 +14,14 @@ interface AppState {
 type AppAction =
   | { type: 'SET_LANGUAGE_PAIRS'; payload: LanguagePair[] }
   | { type: 'SET_CURRENT_LANGUAGE_PAIR'; payload: LanguagePair | null }
-  | { type: 'SET_CARDS'; payload: Card[] }
-  | { type: 'UPDATE_CARD'; payload: Card }
-  | { type: 'SET_CURRENT_CARD'; payload: Card | null }
+  | { type: 'SET_CARDS'; payload: UserCardWithContent[] }
+  | { type: 'UPDATE_CARD'; payload: UserCardWithContent }
+  | { type: 'SET_CURRENT_CARD'; payload: UserCardWithContent | null }
   | { type: 'START_SESSION' }
   | { type: 'END_SESSION' }
   | { type: 'UPDATE_SESSION_STATS'; payload: Partial<SessionStats> }
   | { type: 'UPDATE_USER_STATS'; payload: Partial<UserStats> }
-  | { type: 'ADD_CARD'; payload: Card };
+  | { type: 'ADD_CARD'; payload: UserCardWithContent };
 
 const initialState: AppState = {
   languagePairs: [],
@@ -57,11 +57,22 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, cards: action.payload };
     
     case 'UPDATE_CARD':
+      console.log('🔄 AppContext: UPDATE_CARD action received');
+      console.log('🔄 AppContext: Payload:', action.payload);
+      console.log('🔄 AppContext: Current cards count:', state.cards.length);
+      
+      const updatedCards = state.cards.map(card => {
+        if (card.cardId === action.payload.cardId) {
+          console.log('🔄 AppContext: Updating card:', card.cardId);
+          return action.payload;
+        }
+        return card;
+      });
+      
+      console.log('🔄 AppContext: Updated cards count:', updatedCards.length);
       return {
         ...state,
-        cards: state.cards.map(card => 
-          card.id === action.payload.id ? action.payload : card
-        )
+        cards: updatedCards
       };
     
     case 'ADD_CARD':

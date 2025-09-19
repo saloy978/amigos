@@ -1,6 +1,9 @@
+import { ImageGenerationService } from './imageGenerationService';
+
 interface WordSuggestion {
   term: string;
   translation: string;
+  english?: string;
   imageUrl?: string;
   example?: string;
   difficulty: string;
@@ -13,6 +16,11 @@ interface GenerationRequest {
   learningLanguageCode: string;
   userLevel: string;
   existingWords: string[];
+  topic?: string; // Необязательная тема для генерации слов
+  imageGenerationSettings?: {
+    style: string;
+    enabledServices: string[];
+  };
 }
 
 export class AIWordGeneratorService {
@@ -410,6 +418,86 @@ export class AIWordGeneratorService {
         { term: 'barato', translation: 'дешёвый', example: 'Este restaurante es barato pero bueno.' },
         { term: 'caro', translation: 'дорогой', example: 'Los anillos de diamante son muy caros.' },
         { term: 'gratis', translation: 'бесплатный', example: 'La entrada al museo es gratis hoy.' }
+      ],
+      'es-ru-en': [
+        // Семья и люди - Испанский-Русский-Английский
+        { term: 'madre', translation: 'мама', example: 'Mother is very kind.' },
+        { term: 'padre', translation: 'папа', example: 'Father works in an office.' },
+        { term: 'hermana', translation: 'сестра', example: 'Sister is younger than me.' },
+        { term: 'hermano', translation: 'брат', example: 'Brother plays football.' },
+        { term: 'abuela', translation: 'бабушка', example: 'Grandmother makes delicious cookies.' },
+        { term: 'abuelo', translation: 'дедушка', example: 'Grandfather tells interesting stories.' },
+        { term: 'bebé', translation: 'малыш', example: 'The baby is sleeping.' },
+        { term: 'niño', translation: 'ребёнок', example: 'The child is playing in the park.' },
+        { term: 'hombre', translation: 'мужчина', example: 'The man is reading a newspaper.' },
+        { term: 'mujer', translation: 'женщина', example: 'The woman is cooking dinner.' },
+        
+        // Еда и напитки
+        { term: 'manzana', translation: 'яблоко', example: 'I eat an apple every day.' },
+        { term: 'plátano', translation: 'банан', example: 'Bananas are yellow and sweet.' },
+        { term: 'naranja', translation: 'апельсин', example: 'I drink orange juice for breakfast.' },
+        { term: 'pan', translation: 'хлеб', example: 'We buy fresh bread every morning.' },
+        { term: 'leche', translation: 'молоко', example: 'Children drink milk to grow strong.' },
+        { term: 'café', translation: 'кофе', example: 'I drink coffee in the morning.' },
+        { term: 'té', translation: 'чай', example: 'Would you like some tea?' },
+        { term: 'agua', translation: 'вода', example: 'Water is essential for life.' },
+        { term: 'jugo', translation: 'сок', example: 'Apple juice is my favorite.' },
+        { term: 'pastel', translation: 'торт', example: 'We eat cake on birthdays.' },
+        { term: 'pizza', translation: 'пицца', example: 'Pizza is popular around the world.' },
+        { term: 'pollo', translation: 'курица', example: 'Grilled chicken is healthy.' },
+        { term: 'pescado', translation: 'рыба', example: 'Fish is good for your brain.' },
+        { term: 'arroz', translation: 'рис', example: 'Rice is a staple food in Asia.' },
+        { term: 'pasta', translation: 'паста', example: 'Italian pasta is delicious.' },
+        
+        // Животные
+        { term: 'perro', translation: 'собака', example: 'Dogs are loyal companions.' },
+        { term: 'gato', translation: 'кот', example: 'Cats are independent animals.' },
+        { term: 'pájaro', translation: 'птица', example: 'Birds can fly in the sky.' },
+        { term: 'pez', translation: 'рыба', example: 'Fish live in water.' },
+        { term: 'caballo', translation: 'лошадь', example: 'Horses are strong animals.' },
+        { term: 'vaca', translation: 'корова', example: 'Cows give us milk.' },
+        { term: 'cerdo', translation: 'свинья', example: 'Pigs are intelligent animals.' },
+        { term: 'oveja', translation: 'овца', example: 'Sheep provide wool for clothing.' },
+        { term: 'conejo', translation: 'кролик', example: 'Rabbits hop quickly.' },
+        { term: 'ratón', translation: 'мышь', example: 'The mouse is very small.' },
+        
+        // Дом и мебель
+        { term: 'casa', translation: 'дом', example: 'Our house has a beautiful garden.' },
+        { term: 'habitación', translation: 'комната', example: 'My room is on the second floor.' },
+        { term: 'cocina', translation: 'кухня', example: 'We cook meals in the kitchen.' },
+        { term: 'dormitorio', translation: 'спальня', example: 'I sleep in my bedroom.' },
+        { term: 'baño', translation: 'ванная', example: 'The bathroom has a big mirror.' },
+        { term: 'sala', translation: 'гостиная', example: 'We watch TV in the living room.' },
+        { term: 'mesa', translation: 'стол', example: 'The table is in the kitchen.' },
+        { term: 'silla', translation: 'стул', example: 'I sit on the chair.' },
+        { term: 'cama', translation: 'кровать', example: 'The bed is very comfortable.' },
+        { term: 'puerta', translation: 'дверь', example: 'The door is open.' },
+        { term: 'ventana', translation: 'окно', example: 'The window is closed.' },
+        { term: 'escalera', translation: 'лестница', example: 'The stairs are steep.' },
+        
+        // Цвета
+        { term: 'rojo', translation: 'красный', example: 'Red is my favorite color.' },
+        { term: 'azul', translation: 'синий', example: 'The sky is blue.' },
+        { term: 'verde', translation: 'зелёный', example: 'Grass is green.' },
+        { term: 'amarillo', translation: 'жёлтый', example: 'The sun is yellow.' },
+        { term: 'negro', translation: 'чёрный', example: 'The cat is black.' },
+        { term: 'blanco', translation: 'белый', example: 'Snow is white.' },
+        { term: 'gris', translation: 'серый', example: 'The elephant is gray.' },
+        { term: 'marrón', translation: 'коричневый', example: 'The tree is brown.' },
+        { term: 'rosa', translation: 'розовый', example: 'The flower is pink.' },
+        { term: 'naranja', translation: 'оранжевый', example: 'The carrot is orange.' },
+        
+        // Числа
+        { term: 'uno', translation: 'один', example: 'I have one brother.' },
+        { term: 'dos', translation: 'два', example: 'I have two sisters.' },
+        { term: 'tres', translation: 'три', example: 'I have three books.' },
+        { term: 'cuatro', translation: 'четыре', example: 'I have four pens.' },
+        { term: 'cinco', translation: 'пять', example: 'I have five apples.' },
+        { term: 'seis', translation: 'шесть', example: 'I have six cats.' },
+        { term: 'siete', translation: 'семь', example: 'I have seven days.' },
+        { term: 'ocho', translation: 'восемь', example: 'I have eight friends.' },
+        { term: 'nueve', translation: 'девять', example: 'I have nine toys.' },
+        { term: 'diez', translation: 'десять', example: 'I have ten fingers.' }
       ]
     },
     'A2': {
@@ -796,6 +884,286 @@ export class AIWordGeneratorService {
     return `${request.knownLanguageCode}-${request.learningLanguageCode}-${request.userLevel}`;
   }
 
+  // Тематические словари
+  private static readonly TOPIC_WORDS = {
+    'приветствия и прощания': [
+      { term: 'hola', translation: 'привет', example: '¡Hola! ¿Cómo estás?' },
+      { term: 'adiós', translation: 'до свидания', example: 'Adiós, nos vemos mañana.' },
+      { term: 'buenos días', translation: 'доброе утро', example: 'Buenos días, ¿cómo amaneció?' },
+      { term: 'buenas tardes', translation: 'добрый день', example: 'Buenas tardes, ¿cómo está?' },
+      { term: 'buenas noches', translation: 'добрый вечер', example: 'Buenas noches, que descanse bien.' },
+      { term: '¿qué tal?', translation: 'как дела?', example: '¿Qué tal tu día?' },
+      { term: 'hasta luego', translation: 'до скорого', example: 'Hasta luego, cuídate mucho.' },
+      { term: 'nos vemos', translation: 'увидимся', example: 'Nos vemos el próximo lunes.' },
+      { term: 'saludos', translation: 'приветы', example: 'Saludos a toda la familia.' },
+      { term: 'besos', translation: 'поцелуи', example: 'Besos y abrazos para todos.' }
+    ],
+    'знакомство и личная информация': [
+      { term: 'nombre', translation: 'имя', example: 'Mi nombre es María.' },
+      { term: 'edad', translation: 'возраст', example: 'Tengo veinticinco años.' },
+      { term: 'profesión', translation: 'профессия', example: 'Mi profesión es ingeniera.' },
+      { term: 'trabajo', translation: 'работа', example: 'Trabajo en una empresa grande.' },
+      { term: 'estudios', translation: 'образование', example: 'Estudio medicina en la universidad.' },
+      { term: 'nacionalidad', translation: 'национальность', example: 'Mi nacionalidad es española.' },
+      { term: 'dirección', translation: 'адрес', example: 'Vivo en la calle Mayor, número 15.' },
+      { term: 'teléfono', translation: 'телефон', example: 'Mi número de teléfono es 123-456-789.' },
+      { term: 'email', translation: 'электронная почта', example: 'Mi email es maria@ejemplo.com.' },
+      { term: 'cumpleaños', translation: 'день рождения', example: 'Mi cumpleaños es el 15 de marzo.' }
+    ],
+    'числа, даты, время': [
+      { term: 'uno', translation: 'один', example: 'Tengo un hermano.' },
+      { term: 'dos', translation: 'два', example: 'Son las dos de la tarde.' },
+      { term: 'tres', translation: 'три', example: 'Vivo en el piso tres.' },
+      { term: 'lunes', translation: 'понедельник', example: 'El lunes empiezo el trabajo.' },
+      { term: 'martes', translation: 'вторник', example: 'Los martes voy al gimnasio.' },
+      { term: 'enero', translation: 'январь', example: 'En enero hace mucho frío.' },
+      { term: 'febrero', translation: 'февраль', example: 'Febrero es el mes más corto.' },
+      { term: 'hora', translation: 'час', example: '¿Qué hora es?' },
+      { term: 'minuto', translation: 'минута', example: 'Llego en cinco minutos.' },
+      { term: 'segundo', translation: 'секунда', example: 'Espera un segundo, por favor.' }
+    ],
+    'семья и отношения': [
+      { term: 'familia', translation: 'семья', example: 'Mi familia es muy grande.' },
+      { term: 'padres', translation: 'родители', example: 'Mis padres viven en Madrid.' },
+      { term: 'hermano', translation: 'брат', example: 'Mi hermano es mayor que yo.' },
+      { term: 'hermana', translation: 'сестра', example: 'Mi hermana estudia en Barcelona.' },
+      { term: 'abuelos', translation: 'бабушка и дедушка', example: 'Mis abuelos son muy cariñosos.' },
+      { term: 'primo', translation: 'двоюродный брат', example: 'Mi primo viene de visita.' },
+      { term: 'amigo', translation: 'друг', example: 'Mi mejor amigo se llama Carlos.' },
+      { term: 'novio', translation: 'парень', example: 'Mi novio es muy romántico.' },
+      { term: 'novia', translation: 'девушка', example: 'Mi novia es muy inteligente.' },
+      { term: 'hijo', translation: 'сын', example: 'Mi hijo tiene cinco años.' }
+    ],
+    'дом и жильё': [
+      { term: 'casa', translation: 'дом', example: 'Vivo en una casa grande.' },
+      { term: 'apartamento', translation: 'квартира', example: 'Mi apartamento está en el centro.' },
+      { term: 'habitación', translation: 'комната', example: 'Mi habitación es muy cómoda.' },
+      { term: 'cocina', translation: 'кухня', example: 'La cocina es muy moderna.' },
+      { term: 'baño', translation: 'ванная', example: 'El baño está muy limpio.' },
+      { term: 'sala', translation: 'гостиная', example: 'En la sala vemos televisión.' },
+      { term: 'dormitorio', translation: 'спальня', example: 'El dormitorio es muy tranquilo.' },
+      { term: 'mesa', translation: 'стол', example: 'La mesa está en la cocina.' },
+      { term: 'silla', translation: 'стул', example: 'Me siento en la silla.' },
+      { term: 'cama', translation: 'кровать', example: 'La cama es muy cómoda.' }
+    ],
+    'еда и напитки': [
+      { term: 'desayuno', translation: 'завтрак', example: 'Como el desayuno a las 8 AM.' },
+      { term: 'almuerzo', translation: 'обед', example: 'Almorzamos al mediodía.' },
+      { term: 'cena', translation: 'ужин', example: 'La cena es a las 7 PM.' },
+      { term: 'restaurante', translation: 'ресторан', example: 'Comemos en un restaurante bonito.' },
+      { term: 'menú', translation: 'меню', example: 'Por favor, trae el menú.' },
+      { term: 'camarero', translation: 'официант', example: 'El camarero es muy amable.' },
+      { term: 'cuenta', translation: 'счёт', example: '¿Puedo tener la cuenta, por favor?' },
+      { term: 'propina', translation: 'чаевые', example: 'Deja una propina por el buen servicio.' },
+      { term: 'delicioso', translation: 'вкусный', example: '¡Esta comida está deliciosa!' },
+      { term: 'hambriento', translation: 'голодный', example: 'Estoy muy hambriento.' }
+    ],
+    'магазины и покупки': [
+      { term: 'tienda', translation: 'магазин', example: 'Voy a la tienda a comprar pan.' },
+      { term: 'supermercado', translation: 'супермаркет', example: 'El supermercado está abierto hasta las 10 PM.' },
+      { term: 'ropa', translation: 'одежда', example: 'Necesito comprar ropa nueva.' },
+      { term: 'precio', translation: 'цена', example: '¿Cuál es el precio de esta camisa?' },
+      { term: 'talla', translation: 'размер', example: '¿Qué talla necesitas?' },
+      { term: 'color', translation: 'цвет', example: 'Me gusta el color azul.' },
+      { term: 'zapatos', translation: 'обувь', example: 'Estos zapatos son muy cómodos.' },
+      { term: 'camisa', translation: 'рубашка', example: 'La camisa blanca está de moda.' },
+      { term: 'pantalones', translation: 'брюки', example: 'Los pantalones negros son elegantes.' },
+      { term: 'vestido', translation: 'платье', example: 'El vestido rojo es muy bonito.' }
+    ],
+    'путешествия и транспорт': [
+      { term: 'pasaporte', translation: 'паспорт', example: 'No olvides tu pasaporte.' },
+      { term: 'billete', translation: 'билет', example: 'Necesito comprar un billete de avión.' },
+      { term: 'hotel', translation: 'отель', example: 'Nos quedamos en un hotel bonito.' },
+      { term: 'equipaje', translation: 'багаж', example: 'Mi equipaje es muy pesado.' },
+      { term: 'maleta', translation: 'чемодан', example: 'Empaca tu maleta cuidadosamente.' },
+      { term: 'aeropuerto', translation: 'аэропорт', example: 'El aeropuerto está muy ocupado.' },
+      { term: 'vuelo', translation: 'рейс', example: 'Nuestro vuelo está retrasado.' },
+      { term: 'vacaciones', translation: 'отпуск', example: 'Necesito vacaciones.' },
+      { term: 'turismo', translation: 'туризм', example: 'El turismo es importante para la economía.' },
+      { term: 'aventura', translation: 'приключение', example: 'Viajar es una gran aventura.' }
+    ],
+    'город и достопримечательности': [
+      { term: 'ciudad', translation: 'город', example: 'Madrid es una ciudad muy grande.' },
+      { term: 'calle', translation: 'улица', example: 'Vivo en la calle Mayor.' },
+      { term: 'plaza', translation: 'площадь', example: 'La plaza está en el centro.' },
+      { term: 'parque', translation: 'парк', example: 'El parque es muy bonito.' },
+      { term: 'iglesia', translation: 'церковь', example: 'La iglesia es muy antigua.' },
+      { term: 'museo', translation: 'музей', example: 'El museo tiene muchas obras de arte.' },
+      { term: 'monumento', translation: 'памятник', example: 'El monumento es muy famoso.' },
+      { term: 'edificio', translation: 'здание', example: 'Este edificio es muy alto.' },
+      { term: 'dirección', translation: 'направление', example: '¿Puedes darme la dirección?' },
+      { term: 'mapa', translation: 'карта', example: 'Necesito un mapa de la ciudad.' }
+    ],
+    'здоровье и визит к врачу': [
+      { term: 'médico', translation: 'врач', example: 'Voy al médico mañana.' },
+      { term: 'hospital', translation: 'больница', example: 'El hospital está cerca de aquí.' },
+      { term: 'farmacia', translation: 'аптека', example: 'La farmacia está abierta las 24 horas.' },
+      { term: 'medicina', translation: 'лекарство', example: 'Necesito tomar esta medicina.' },
+      { term: 'dolor', translation: 'боль', example: 'Tengo dolor de cabeza.' },
+      { term: 'enfermedad', translation: 'болезнь', example: 'La enfermedad es muy grave.' },
+      { term: 'síntoma', translation: 'симптом', example: 'Los síntomas son fiebre y tos.' },
+      { term: 'cita', translation: 'приём', example: 'Tengo cita con el dentista.' },
+      { term: 'salud', translation: 'здоровье', example: 'La salud es lo más importante.' },
+      { term: 'ejercicio', translation: 'упражнение', example: 'Hacer ejercicio es bueno para la salud.' }
+    ],
+    'работа и профессии': [
+      { term: 'oficina', translation: 'офис', example: 'Trabajo en una oficina grande.' },
+      { term: 'reunión', translation: 'встреча', example: 'Tenemos una reunión a las 3 PM.' },
+      { term: 'proyecto', translation: 'проект', example: 'Este proyecto es muy importante.' },
+      { term: 'fecha límite', translation: 'срок', example: 'La fecha límite es el próximo viernes.' },
+      { term: 'colega', translation: 'коллега', example: 'Mi colega es muy útil.' },
+      { term: 'jefe', translation: 'начальник', example: 'Mi jefe es muy comprensivo.' },
+      { term: 'salario', translation: 'зарплата', example: 'Recibo mi salario mensualmente.' },
+      { term: 'entrevista', translation: 'собеседование', example: 'Tengo una entrevista mañana.' },
+      { term: 'currículum', translation: 'резюме', example: 'Por favor, envía tu currículum.' },
+      { term: 'carrera', translation: 'карьера', example: 'Quiero construir mi carrera.' }
+    ],
+    'учёба и языки': [
+      { term: 'escuela', translation: 'школа', example: 'Voy a la escuela todos los días.' },
+      { term: 'universidad', translation: 'университет', example: 'Estudio en la universidad.' },
+      { term: 'profesor', translation: 'учитель', example: 'Mi profesor es muy bueno.' },
+      { term: 'estudiante', translation: 'студент', example: 'Soy estudiante de medicina.' },
+      { term: 'clase', translation: 'урок', example: 'La clase de español es muy interesante.' },
+      { term: 'examen', translation: 'экзамен', example: 'Tengo un examen mañana.' },
+      { term: 'tarea', translation: 'домашнее задание', example: 'La tarea es muy difícil.' },
+      { term: 'libro', translation: 'книга', example: 'Necesito comprar un libro nuevo.' },
+      { term: 'idioma', translation: 'язык', example: 'El español es un idioma hermoso.' },
+      { term: 'aprender', translation: 'изучать', example: 'Quiero aprender español.' }
+    ],
+    'хобби и свободное время': [
+      { term: 'fútbol', translation: 'футбол', example: 'El fútbol es muy popular.' },
+      { term: 'baloncesto', translation: 'баскетбол', example: 'El baloncesto se juega con una pelota.' },
+      { term: 'tenis', translation: 'теннис', example: 'Juego tenis cada fin de semana.' },
+      { term: 'natación', translation: 'плавание', example: 'La natación es buen ejercicio.' },
+      { term: 'correr', translation: 'бег', example: 'Correr me ayuda a mantenerme en forma.' },
+      { term: 'gimnasio', translation: 'спортзал', example: 'Voy al gimnasio regularmente.' },
+      { term: 'entrenamiento', translation: 'тренировка', example: 'El entrenamiento es duro pero gratificante.' },
+      { term: 'competición', translation: 'соревнование', example: 'La competición es mañana.' },
+      { term: 'campeón', translation: 'чемпион', example: 'Él es un campeón mundial.' },
+      { term: 'medalla', translation: 'медаль', example: 'Ella ganó una medalla de oro.' }
+    ],
+    'погода и природа': [
+      { term: 'montaña', translation: 'гора', example: 'La montaña es muy alta.' },
+      { term: 'bosque', translation: 'лес', example: 'Caminamos por el bosque.' },
+      { term: 'océano', translation: 'океан', example: 'El océano es muy profundo.' },
+      { term: 'río', translation: 'река', example: 'El río fluye hacia el mar.' },
+      { term: 'lago', translation: 'озеро', example: 'El lago es muy tranquilo.' },
+      { term: 'playa', translation: 'пляж', example: 'Nos relajamos en la playa.' },
+      { term: 'desierto', translation: 'пустыня', example: 'El desierto es muy caliente.' },
+      { term: 'isla', translation: 'остров', example: 'Visitamos una isla tropical.' },
+      { term: 'valle', translation: 'долина', example: 'El valle es muy verde.' },
+      { term: 'cascada', translation: 'водопад', example: 'La cascada es hermosa.' }
+    ],
+    'телефон и интернет': [
+      { term: 'computadora', translation: 'компьютер', example: 'Trabajo en mi computadora.' },
+      { term: 'internet', translation: 'интернет', example: 'El internet es muy útil.' },
+      { term: 'sitio web', translation: 'веб-сайт', example: 'Visito este sitio web diariamente.' },
+      { term: 'correo electrónico', translation: 'электронная почта', example: 'Reviso mi correo electrónico regularmente.' },
+      { term: 'teléfono inteligente', translation: 'смартфон', example: 'Mi teléfono inteligente es muy avanzado.' },
+      { term: 'software', translation: 'программное обеспечение', example: 'Este software es fácil de usar.' },
+      { term: 'aplicación', translation: 'приложение', example: 'Descargo una nueva aplicación.' },
+      { term: 'contraseña', translation: 'пароль', example: 'No olvides tu contraseña.' },
+      { term: 'base de datos', translation: 'база данных', example: 'La base de datos almacena información.' },
+      { term: 'red', translation: 'сеть', example: 'La conexión de red es rápida.' }
+    ],
+    'эмоции и чувства': [
+      { term: 'feliz', translation: 'счастливый', example: 'Estoy muy feliz hoy.' },
+      { term: 'triste', translation: 'грустный', example: 'Me siento triste por la noticia.' },
+      { term: 'enojado', translation: 'злой', example: 'Estoy enojado con mi hermano.' },
+      { term: 'nervioso', translation: 'нервный', example: 'Estoy nervioso por el examen.' },
+      { term: 'emocionado', translation: 'взволнованный', example: 'Estoy emocionado por el viaje.' },
+      { term: 'sorprendido', translation: 'удивлённый', example: 'Estoy sorprendido por la noticia.' },
+      { term: 'preocupado', translation: 'обеспокоенный', example: 'Estoy preocupado por mi salud.' },
+      { term: 'relajado', translation: 'расслабленный', example: 'Me siento muy relajado.' },
+      { term: 'cansado', translation: 'усталый', example: 'Estoy muy cansado después del trabajo.' },
+      { term: 'enamorado', translation: 'влюблённый', example: 'Estoy enamorado de mi novia.' }
+    ],
+    'описание людей': [
+      { term: 'alto', translation: 'высокий', example: 'Mi hermano es muy alto.' },
+      { term: 'bajo', translation: 'низкий', example: 'Soy más bajo que mi padre.' },
+      { term: 'delgado', translation: 'худой', example: 'Mi hermana es muy delgada.' },
+      { term: 'gordo', translation: 'толстый', example: 'Mi tío es un poco gordo.' },
+      { term: 'joven', translation: 'молодой', example: 'Ella es muy joven.' },
+      { term: 'viejo', translation: 'старый', example: 'Mi abuelo es muy viejo.' },
+      { term: 'bonito', translation: 'красивый', example: 'Ella es muy bonita.' },
+      { term: 'feo', translation: 'уродливый', example: 'No es feo, solo diferente.' },
+      { term: 'inteligente', translation: 'умный', example: 'Mi profesor es muy inteligente.' },
+      { term: 'tonto', translation: 'глупый', example: 'No seas tonto, piensa bien.' }
+    ],
+    'описание предметов и мест': [
+      { term: 'grande', translation: 'большой', example: 'Esta casa es muy grande.' },
+      { term: 'pequeño', translation: 'маленький', example: 'El perro es muy pequeño.' },
+      { term: 'nuevo', translation: 'новый', example: 'Compré un coche nuevo.' },
+      { term: 'viejo', translation: 'старый', example: 'Este libro es muy viejo.' },
+      { term: 'rápido', translation: 'быстрый', example: 'El tren es muy rápido.' },
+      { term: 'lento', translation: 'медленный', example: 'El autobús es muy lento.' },
+      { term: 'fácil', translation: 'лёгкий', example: 'Este ejercicio es muy fácil.' },
+      { term: 'difícil', translation: 'трудный', example: 'El examen es muy difícil.' },
+      { term: 'barato', translation: 'дешёвый', example: 'Esta camisa es muy barata.' },
+      { term: 'caro', translation: 'дорогой', example: 'El restaurante es muy caro.' }
+    ],
+    'будущее и планы': [
+      { term: 'futuro', translation: 'будущее', example: 'El futuro es incierto.' },
+      { term: 'plan', translation: 'план', example: 'Tengo un plan para mañana.' },
+      { term: 'sueño', translation: 'мечта', example: 'Mi sueño es viajar por el mundo.' },
+      { term: 'meta', translation: 'цель', example: 'Mi meta es aprender español.' },
+      { term: 'esperanza', translation: 'надежда', example: 'Tengo esperanza en el futuro.' },
+      { term: 'intención', translation: 'намерение', example: 'Mi intención es ayudarte.' },
+      { term: 'proyecto', translation: 'проект', example: 'Este proyecto es muy importante.' },
+      { term: 'objetivo', translation: 'цель', example: 'Mi objetivo es graduarme.' },
+      { term: 'ambición', translation: 'амбиция', example: 'Tengo mucha ambición.' },
+      { term: 'deseo', translation: 'желание', example: 'Mi deseo es ser feliz.' }
+    ],
+    'культура и традиции': [
+      { term: 'fiesta', translation: 'праздник', example: 'La fiesta de cumpleaños es mañana.' },
+      { term: 'tradición', translation: 'традиция', example: 'Esta tradición es muy antigua.' },
+      { term: 'costumbre', translation: 'обычай', example: 'Es una costumbre local.' },
+      { term: 'cultura', translation: 'культура', example: 'La cultura española es muy rica.' },
+      { term: 'religión', translation: 'религия', example: 'La religión es importante para muchos.' },
+      { term: 'celebración', translation: 'празднование', example: 'La celebración es muy alegre.' },
+      { term: 'ritual', translation: 'ритуал', example: 'Este ritual es muy especial.' },
+      { term: 'festival', translation: 'фестиваль', example: 'El festival de música es genial.' },
+      { term: 'ceremonia', translation: 'церемония', example: 'La ceremonia de graduación es emocionante.' },
+      { term: 'herencia', translation: 'наследие', example: 'Esta herencia cultural es valiosa.' }
+    ],
+    'животные': [
+      { term: 'perro', translation: 'собака', example: 'Mi perro es muy juguetón.' },
+      { term: 'gato', translation: 'кот', example: 'El gato duerme en el sofá.' },
+      { term: 'pájaro', translation: 'птица', example: 'El pájaro canta en el árbol.' },
+      { term: 'pez', translation: 'рыба', example: 'Los peces nadan en el acuario.' },
+      { term: 'caballo', translation: 'лошадь', example: 'El caballo galopa en el campo.' },
+      { term: 'vaca', translation: 'корова', example: 'La vaca da leche fresca.' },
+      { term: 'cerdo', translation: 'свинья', example: 'El cerdo vive en la granja.' },
+      { term: 'oveja', translation: 'овца', example: 'La oveja tiene lana blanca.' },
+      { term: 'conejo', translation: 'кролик', example: 'El conejo salta muy alto.' },
+      { term: 'ratón', translation: 'мышь', example: 'El ratón es muy pequeño.' }
+    ],
+    'цвета': [
+      { term: 'rojo', translation: 'красный', example: 'La manzana es roja.' },
+      { term: 'azul', translation: 'синий', example: 'El cielo es azul.' },
+      { term: 'verde', translation: 'зеленый', example: 'La hierba es verde.' },
+      { term: 'amarillo', translation: 'желтый', example: 'El sol es amarillo.' },
+      { term: 'negro', translation: 'черный', example: 'La noche es negra.' },
+      { term: 'blanco', translation: 'белый', example: 'La nieve es blanca.' },
+      { term: 'gris', translation: 'серый', example: 'Las nubes son grises.' },
+      { term: 'marrón', translation: 'коричневый', example: 'El árbol es marrón.' },
+      { term: 'rosa', translation: 'розовый', example: 'La flor es rosa.' },
+      { term: 'naranja', translation: 'оранжевый', example: 'La naranja es naranja.' }
+    ],
+    'поход в магазин': [
+      { term: 'tienda', translation: 'магазин', example: 'Voy a la tienda a comprar.' },
+      { term: 'comprar', translation: 'покупать', example: 'Necesito comprar leche.' },
+      { term: 'carrito', translation: 'корзина', example: 'Empujo el carrito por los pasillos.' },
+      { term: 'caja', translation: 'касса', example: 'Pago en la caja registradora.' },
+      { term: 'vendedor', translation: 'продавец', example: 'El vendedor me ayuda a encontrar productos.' },
+      { term: 'precio', translation: 'цена', example: 'El precio está en la etiqueta.' },
+      { term: 'descuento', translation: 'скидка', example: 'Hay un descuento del 20%.' },
+      { term: 'recibo', translation: 'чек', example: 'Guardo el recibo de la compra.' },
+      { term: 'bolsa', translation: 'пакет', example: 'Pongo las compras en la bolsa.' },
+      { term: 'dinero', translation: 'деньги', example: 'Pago con dinero en efectivo.' }
+    ]
+  };
+
   private static readonly SAMPLE_IMAGES = [
     'https://images.pexels.com/photos/102104/pexels-photo-102104.jpeg?w=400&h=300&fit=crop',
     'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?w=400&h=300&fit=crop',
@@ -818,34 +1186,70 @@ export class AIWordGeneratorService {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       const sessionKey = this.generateSessionKey(request);
-      const languagePairKey = `${request.knownLanguageCode}-${request.learningLanguageCode}`;
+      // Изменяем логику: теперь используем формат "изучаемый-знаю-английский"
+      // Например: "es-ru-en" для испанский-русский-английский
+      const languagePairKey = `${request.learningLanguageCode}-${request.knownLanguageCode}-en`;
       
       console.log('🔑 Session key:', sessionKey);
-      console.log('🌐 Language pair key:', languagePairKey);
+      console.log('🌐 Language pair key (new format):', languagePairKey);
       console.log('📚 User level:', request.userLevel);
-      
-      // Получаем шаблоны для уровня пользователя
-      const levelTemplates = this.WORD_TEMPLATES[request.userLevel as keyof typeof this.WORD_TEMPLATES];
-      console.log('📖 Level templates found:', !!levelTemplates);
       
       let templates: Array<{ term: string; translation: string; example: string }> = [];
       
-      if (levelTemplates && levelTemplates[languagePairKey as keyof typeof levelTemplates]) {
-        templates = levelTemplates[languagePairKey as keyof typeof levelTemplates];
-        console.log(`✅ Found ${templates.length} templates for ${languagePairKey} at level ${request.userLevel}`);
-      } else {
-        // Fallback logic - ищем подходящие шаблоны
-        console.log(`⚠️ No templates found for ${languagePairKey} at level ${request.userLevel}, using fallback`);
+      // Проверяем, есть ли тема для генерации
+      if (request.topic) {
+        console.log(`🎯 Topic requested: "${request.topic}"`);
+        const topicKey = request.topic.toLowerCase().trim();
         
-        // Пробуем найти шаблоны для этой языковой пары на уровне A1
-        const fallbackLevel = this.WORD_TEMPLATES['A1'];
-        if (fallbackLevel && fallbackLevel[languagePairKey as keyof typeof fallbackLevel]) {
-          templates = fallbackLevel[languagePairKey as keyof typeof fallbackLevel];
-          console.log(`🔄 Using A1 fallback: ${templates.length} templates`);
+        // Ищем тематические слова (точное совпадение)
+        if (this.TOPIC_WORDS[topicKey as keyof typeof this.TOPIC_WORDS]) {
+          templates = this.TOPIC_WORDS[topicKey as keyof typeof this.TOPIC_WORDS];
+          console.log(`✅ Found ${templates.length} topic words for "${topicKey}"`);
         } else {
-          // Если не найдено, используем ru-en как последний fallback
-          templates = this.WORD_TEMPLATES['A1']['ru-en'];
-          console.log(`🔄 Using ru-en fallback: ${templates.length} templates`);
+          // Нечеткий поиск по ключевым словам
+          const fuzzyMatch = this.findTopicByKeywords(topicKey);
+          if (fuzzyMatch) {
+            templates = this.TOPIC_WORDS[fuzzyMatch as keyof typeof this.TOPIC_WORDS];
+            console.log(`🔍 Fuzzy match found: "${topicKey}" → "${fuzzyMatch}" (${templates.length} words)`);
+          } else {
+            console.log(`⚠️ No topic words found for "${topicKey}", using general templates`);
+          }
+        }
+      }
+      
+      // Если тематические слова не найдены, используем общие шаблоны
+      if (templates.length === 0) {
+        const levelTemplates = this.WORD_TEMPLATES[request.userLevel as keyof typeof this.WORD_TEMPLATES];
+        console.log('📖 Level templates found:', !!levelTemplates);
+        
+        if (levelTemplates && levelTemplates[languagePairKey as keyof typeof levelTemplates]) {
+          templates = levelTemplates[languagePairKey as keyof typeof levelTemplates];
+          console.log(`✅ Found ${templates.length} templates for ${languagePairKey} at level ${request.userLevel}`);
+        } else {
+          // Fallback logic - ищем подходящие шаблоны
+          console.log(`⚠️ No templates found for ${languagePairKey} at level ${request.userLevel}, using fallback`);
+          
+          // Пробуем найти шаблоны для этой языковой пары на уровне A1
+          const fallbackLevel = this.WORD_TEMPLATES['A1'];
+          if (fallbackLevel && fallbackLevel[languagePairKey as keyof typeof fallbackLevel]) {
+            templates = fallbackLevel[languagePairKey as keyof typeof fallbackLevel];
+            console.log(`🔄 Using A1 fallback: ${templates.length} templates`);
+          } else {
+            // Если не найдено, используем es-ru-en как последний fallback
+            templates = this.WORD_TEMPLATES['A1']['es-ru-en'] || this.WORD_TEMPLATES['A1']['ru-en'];
+            console.log(`🔄 Using es-ru-en fallback: ${templates.length} templates`);
+            
+            // Если и это не сработало, используем любые доступные шаблоны
+            if (!templates || templates.length === 0) {
+              console.log('🔄 No es-ru-en templates found, using any available A1 templates');
+              const a1Templates = this.WORD_TEMPLATES['A1'];
+              const availablePairs = Object.keys(a1Templates);
+              if (availablePairs.length > 0) {
+                templates = a1Templates[availablePairs[0] as keyof typeof a1Templates];
+                console.log(`🔄 Using ${availablePairs[0]} templates: ${templates.length} templates`);
+              }
+            }
+          }
         }
       }
 
@@ -854,7 +1258,8 @@ export class AIWordGeneratorService {
         throw new Error('Нет доступных шаблонов слов для данной языковой пары');
       }
 
-      return this.selectAndFormatWords(templates, request.existingWords, request.userLevel, sessionKey);
+      const languageSettings = { targetLanguage: request.learningLanguage };
+      return await this.selectAndFormatWords(templates, request.existingWords, request.userLevel, sessionKey, languageSettings);
 
     } catch (error) {
       console.error('❌ Error generating words:', error);
@@ -862,12 +1267,13 @@ export class AIWordGeneratorService {
     }
   }
 
-  private static selectAndFormatWords(
+  private static async selectAndFormatWords(
     templates: Array<{ term: string; translation: string; example: string }>,
     existingWords: string[],
     userLevel: string,
-    sessionKey: string
-  ): WordSuggestion[] {
+    sessionKey: string,
+    languageSettings: { targetLanguage: string }
+  ): Promise<WordSuggestion[]> {
     console.log('📝 Selecting and formatting words from templates:', templates?.length || 0);
     console.log('🚫 Existing words to exclude:', existingWords);
     
@@ -898,7 +1304,7 @@ export class AIWordGeneratorService {
     console.log('✅ Available templates after filtering:', availableTemplates.length);
     
     // Если доступных шаблонов мало, сбрасываем историю сессии
-    if (availableTemplates.length < 10) {
+    if (availableTemplates.length < 5) {
       console.log('🔄 Not enough available templates, resetting session history');
       sessionUsed.clear();
       
@@ -913,21 +1319,22 @@ export class AIWordGeneratorService {
       console.log('✅ Available templates after session reset:', resetAvailableTemplates.length);
       
       if (resetAvailableTemplates.length > 0) {
-        return this.formatSelectedWords(resetAvailableTemplates, userLevel, sessionUsed);
+        return await this.formatSelectedWords(resetAvailableTemplates, userLevel, sessionUsed, languageSettings);
       }
     }
     
-    return this.formatSelectedWords(availableTemplates, userLevel, sessionUsed);
+    return await this.formatSelectedWords(availableTemplates, userLevel, sessionUsed, languageSettings);
   }
   
-  private static formatSelectedWords(
+  private static async formatSelectedWords(
     availableTemplates: Array<{ term: string; translation: string; example: string }>,
     userLevel: string,
-    sessionUsed: Set<string>
-  ): WordSuggestion[] {
-    // Перемешиваем и берем до 10 слов
+    sessionUsed: Set<string>,
+    languageSettings: { targetLanguage: string }
+  ): Promise<WordSuggestion[]> {
+    // Перемешиваем и берем до 15 слов (увеличено с 10)
     const shuffled = [...availableTemplates].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, Math.min(10, shuffled.length));
+    const selected = shuffled.slice(0, Math.min(15, shuffled.length));
     
     // Добавляем выбранные слова в историю использованных для сессии
     selected.forEach(template => {
@@ -938,16 +1345,169 @@ export class AIWordGeneratorService {
     console.log('🎯 Selected words for this generation:', selected.map(s => s.term));
     console.log('📚 Updated session used words:', Array.from(sessionUsed));
 
-    const result = selected.map((template, index) => ({
-      term: template.term,
-      translation: template.translation,
-      imageUrl: this.SAMPLE_IMAGES[index % this.SAMPLE_IMAGES.length],
-      example: template.example,
-      difficulty: userLevel
-    }));
+    // Генерируем изображения для выбранных слов
+    console.log('🎨 Generating images for selected words...');
+    const result = await Promise.all(
+      selected.map(async (template, index) => {
+        // Для генерации изображений используем английское слово из примера
+        const englishWord = this.extractEnglishWordFromExample(template.example);
+        console.log(`🖼️ Generating image for "${template.term}" using English word: "${englishWord}"`);
+        
+        let imageUrl = this.SAMPLE_IMAGES[index % this.SAMPLE_IMAGES.length];
+        
+        // Проверяем настройки генерации изображений
+        const shouldGenerateImage = this.shouldGenerateImage(request.imageGenerationSettings);
+        
+        if (shouldGenerateImage) {
+          try {
+            const imageResult = await ImageGenerationService.generateImage({
+              word: englishWord,
+              language: 'en', // Всегда используем английский для генерации изображений
+              style: request.imageGenerationSettings?.style || 'cartoon'
+            });
+            
+            if (imageResult.success && imageResult.imageUrl) {
+              imageUrl = imageResult.imageUrl;
+              console.log(`✅ Image generated for "${template.term}": ${imageUrl}`);
+            } else {
+              console.warn(`⚠️ Image generation failed for "${template.term}": ${imageResult.error}`);
+            }
+          } catch (error) {
+            console.warn(`⚠️ Image generation error for "${template.term}":`, error);
+          }
+        } else {
+          console.log(`⏭️ Skipping image generation for "${template.term}" - all services disabled`);
+        }
+        
+        return {
+          term: template.term,
+          translation: template.translation,
+          english: englishWord,
+          imageUrl: imageUrl,
+          example: template.example,
+          difficulty: userLevel
+        };
+      })
+    );
     
-    console.log('✅ Final formatted words:', result);
+    console.log('✅ Final formatted words with images:', result);
     return result;
+  }
+
+  /**
+   * Находит тему по ключевым словам (нечеткий поиск)
+   */
+  private static findTopicByKeywords(topicKey: string): string | null {
+    const availableTopics = Object.keys(this.TOPIC_WORDS);
+    
+    // Словарь синонимов и ключевых слов
+    const keywordMap: Record<string, string[]> = {
+      'магазин': ['магазины и покупки', 'поход в магазин'],
+      'покупки': ['магазины и покупки', 'поход в магазин'],
+      'покупка': ['магазины и покупки', 'поход в магазин'],
+      'поход': ['поход в магазин'],
+      'еда': ['еда и напитки'],
+      'напитки': ['еда и напитки'],
+      'семья': ['семья и отношения'],
+      'отношения': ['семья и отношения'],
+      'дом': ['дом и жильё'],
+      'жильё': ['дом и жильё'],
+      'путешествия': ['путешествия и транспорт'],
+      'транспорт': ['путешествия и транспорт'],
+      'работа': ['работа и профессии'],
+      'профессии': ['работа и профессии'],
+      'учёба': ['учёба и языки'],
+      'языки': ['учёба и языки'],
+      'хобби': ['хобби и свободное время'],
+      'свободное время': ['хобби и свободное время'],
+      'погода': ['погода и природа'],
+      'природа': ['погода и природа'],
+      'здоровье': ['здоровье и визит к врачу'],
+      'врач': ['здоровье и визит к врачу'],
+      'эмоции': ['эмоции и чувства'],
+      'чувства': ['эмоции и чувства'],
+      'цвета': ['цвета'],
+      'животные': ['животные']
+    };
+    
+    // Ищем по ключевым словам
+    for (const [keyword, topics] of Object.entries(keywordMap)) {
+      if (topicKey.includes(keyword)) {
+        // Возвращаем первую подходящую тему
+        const matchingTopic = topics.find(topic => availableTopics.includes(topic));
+        if (matchingTopic) {
+          return matchingTopic;
+        }
+      }
+    }
+    
+    // Если не найдено по ключевым словам, ищем частичное совпадение
+    for (const topic of availableTopics) {
+      const topicWords = topic.split(' ');
+      const inputWords = topicKey.split(' ');
+      
+      // Проверяем, есть ли общие слова
+      const commonWords = topicWords.filter(word => 
+        inputWords.some(inputWord => 
+          word.includes(inputWord) || inputWord.includes(word)
+        )
+      );
+      
+      if (commonWords.length > 0) {
+        return topic;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Проверяет, нужно ли генерировать изображения на основе настроек
+   */
+  private static shouldGenerateImage(imageSettings?: {
+    style: string;
+    enabledServices: string[];
+  }): boolean {
+    if (!imageSettings || !imageSettings.enabledServices) {
+      // Если настройки не переданы, используем значения по умолчанию
+      return true;
+    }
+    
+    // Проверяем, есть ли хотя бы один включенный сервис
+    const hasEnabledServices = imageSettings.enabledServices.length > 0;
+    
+    if (!hasEnabledServices) {
+      console.log('🚫 Image generation disabled - no services enabled');
+      return false;
+    }
+    
+    // Проверяем, что включен хотя бы один реальный сервис (не только Fallback)
+    const hasRealServices = imageSettings.enabledServices.some(service => 
+      service !== 'Fallback' && service !== 'Unsplash' && service !== 'Pexels' && service !== 'Pixabay' && service !== 'Craiyon'
+    );
+    
+    if (!hasRealServices) {
+      console.log('🚫 Image generation disabled - only fallback services enabled');
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Извлекает английское слово из примера предложения
+   */
+  private static extractEnglishWordFromExample(example: string): string {
+    // Примеры имеют формат: "Mother is very kind." или "I eat an apple every day."
+    // Извлекаем первое существительное или основное слово
+    const words = example.toLowerCase()
+      .replace(/[.,!?;:]/g, '') // Убираем знаки препинания
+      .split(' ')
+      .filter(word => word.length > 2) // Убираем короткие слова
+      .filter(word => !['the', 'and', 'are', 'is', 'was', 'were', 'have', 'has', 'had', 'will', 'would', 'can', 'could', 'should', 'may', 'might'].includes(word)); // Убираем служебные слова
+    
+    // Возвращаем первое подходящее слово
+    return words[0] || 'object';
   }
 
   static getLevelDescription(level: string): string {
@@ -972,6 +1532,27 @@ export class AIWordGeneratorService {
       'C2': '📚 Академическая и специализированная лексика'
     };
     return themes[level] || '📖 Общая лексика';
+  }
+
+  // Получить список доступных тем
+  static getAvailableTopics(): string[] {
+    return Object.keys(this.TOPIC_WORDS);
+  }
+
+  // Получить описание темы
+  static getTopicDescription(topic: string): string {
+    const descriptions: Record<string, string> = {
+      'еда': '🍽️ Слова связанные с едой, ресторанами и кулинарией',
+      'животные': '🐾 Названия животных и связанная с ними лексика',
+      'путешествия': '✈️ Слова для путешествий, туризма и транспорта',
+      'работа': '💼 Профессиональная лексика и офисная жизнь',
+      'спорт': '⚽ Спортивные термины и физическая активность',
+      'музыка': '🎵 Музыкальные инструменты, жанры и термины',
+      'природа': '🌿 Природные объекты, пейзажи и экология',
+      'технологии': '💻 Компьютеры, интернет и современные технологии',
+      'поход в магазин': '🛒 Слова для похода в магазин и покупок'
+    };
+    return descriptions[topic] || `📚 Слова по теме "${topic}"`;
   }
   
   // Метод для сброса истории использованных слов сессии (для тестирования)

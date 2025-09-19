@@ -59,9 +59,9 @@ export class DatabaseService {
       return {
         language_pair: {
           known_language: 'Русский',
-          learning_language: 'English',
+          learning_language: 'Español',
           known_language_code: 'ru',
-          learning_language_code: 'en'
+          learning_language_code: 'es'
         },
         daily_goal: 20,
         notifications_enabled: true,
@@ -72,9 +72,9 @@ export class DatabaseService {
       return {
         language_pair: {
           known_language: 'Русский',
-          learning_language: 'English',
+          learning_language: 'Español',
           known_language_code: 'ru',
-          learning_language_code: 'en'
+          learning_language_code: 'es'
         },
         daily_goal: 20,
         notifications_enabled: true,

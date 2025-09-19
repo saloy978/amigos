@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Get User Cards Debug</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test Get User Cards Debug</h1>
+    <button id="testBtn">Test Get User Cards Debug</button>
+    <div id="result"></div>
+
+    <script>
+        const supabaseUrl = 'http://127.0.0.1:54321';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Sign in anonymously
+                const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+                
+                if (authError) {
+                    resultDiv.innerHTML = `Auth Error: ${authError.message}`;
+                    return;
+                }
+                
+                resultDiv.innerHTML = `Auth Success! User ID: ${authData.user.id}<br>`;
+                
+                // Test getUserCards function (simulate CardService.getUserCards)
+                resultDiv.innerHTML += '<br>Testing getUserCards function...<br>';
+                
+                const { data, error } = await supabase
+                    .from('user_cards_with_content')
+                    .select('*')
+                    .eq('user_id', authData.user.id)
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    resultDiv.innerHTML += `getUserCards error: ${error.message}<br>`;
+                    console.error('getUserCards error:', error);
+                } else {
+                    resultDiv.innerHTML += `getUserCards success: Found ${data.length} cards<br>`;
+                    if (data.length > 0) {
+                        resultDiv.innerHTML += `First card: ${JSON.stringify(data[0], null, 2)}<br>`;
+                    }
+                }
+                
+                // Test direct user_cards query
+                resultDiv.innerHTML += '<br>Testing direct user_cards query...<br>';
+                const { data: userCards, error: userCardsError } = await supabase
+                    .from('user_cards')
+                    .select('*')
+                    .eq('user_id', authData.user.id);
+                
+                if (userCardsError) {
+                    resultDiv.innerHTML += `Direct user_cards error: ${userCardsError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `Direct user_cards success: Found ${userCards.length} cards<br>`;
+                    if (userCards.length > 0) {
+                        resultDiv.innerHTML += `First user card: ${JSON.stringify(userCards[0], null, 2)}<br>`;
+                    }
+                }
+                
+                // Test cards table
+                resultDiv.innerHTML += '<br>Testing cards table...<br>';
+                const { data: cards, error: cardsError } = await supabase
+                    .from('cards')
+                    .select('*')
+                    .limit(5);
+                
+                if (cardsError) {
+                    resultDiv.innerHTML += `Cards table error: ${cardsError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `Cards table success: Found ${cards.length} cards<br>`;
+                    if (cards.length > 0) {
+                        resultDiv.innerHTML += `First card: ${JSON.stringify(cards[0], null, 2)}<br>`;
+                    }
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `Exception: ${error.message}`;
+                console.error('Exception:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+

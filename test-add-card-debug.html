@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Add Card Debug</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test Add Card Debug</h1>
+    <button id="testBtn">Test Add Card Debug</button>
+    <div id="result"></div>
+
+    <script>
+        const supabaseUrl = 'http://127.0.0.1:54321';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Sign in anonymously
+                const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+                
+                if (authError) {
+                    resultDiv.innerHTML = `Auth Error: ${authError.message}`;
+                    return;
+                }
+                
+                resultDiv.innerHTML = `Auth Success! User ID: ${authData.user.id}<br>`;
+                
+                // Check initial state
+                resultDiv.innerHTML += '<br>Checking initial state...<br>';
+                const { data: initialUserCards, error: initialError } = await supabase
+                    .from('user_cards')
+                    .select('*')
+                    .eq('user_id', authData.user.id);
+                
+                if (initialError) {
+                    resultDiv.innerHTML += `Initial user cards error: ${initialError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `Initial user cards: ${initialUserCards.length}<br>`;
+                }
+                
+                // Test adding a completely new word
+                resultDiv.innerHTML += '<br>Testing with a completely new word...<br>';
+                const { data, error } = await supabase.rpc('add_card_to_user_with_lesson', {
+                    p_language_pair_id: 'ru-es',
+                    p_term: 'testword',
+                    p_translation: 'тестовое слово',
+                    p_image_url: null,
+                    p_english: 'test word',
+                    p_lesson_id: 'intro',
+                    p_lesson_order: 1
+                });
+                
+                if (error) {
+                    resultDiv.innerHTML += `Add card error: ${error.message}<br>`;
+                    console.error('Error:', error);
+                } else {
+                    resultDiv.innerHTML += `Add card result: ${JSON.stringify(data)}<br>`;
+                    console.log('Result:', data);
+                }
+                
+                // Check final state
+                resultDiv.innerHTML += '<br>Checking final state...<br>';
+                const { data: finalUserCards, error: finalError } = await supabase
+                    .from('user_cards')
+                    .select('*')
+                    .eq('user_id', authData.user.id);
+                
+                if (finalError) {
+                    resultDiv.innerHTML += `Final user cards error: ${finalError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `Final user cards: ${finalUserCards.length}<br>`;
+                    if (finalUserCards.length > initialUserCards.length) {
+                        resultDiv.innerHTML += `🎉 SUCCESS: New user card was created!<br>`;
+                    } else {
+                        resultDiv.innerHTML += `❌ PROBLEM: No new user card was created<br>`;
+                    }
+                }
+                
+                // Check if card was created in cards table
+                resultDiv.innerHTML += '<br>Checking if card was created in cards table...<br>';
+                const { data: cards, error: cardsError } = await supabase
+                    .from('cards')
+                    .select('*')
+                    .eq('term', 'testword')
+                    .eq('translation', 'тестовое слово');
+                
+                if (cardsError) {
+                    resultDiv.innerHTML += `Cards error: ${cardsError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `Cards found: ${cards.length}<br>`;
+                    if (cards.length > 0) {
+                        resultDiv.innerHTML += `Card: ${JSON.stringify(cards[0], null, 2)}<br>`;
+                    }
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `Exception: ${error.message}`;
+                console.error('Exception:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+

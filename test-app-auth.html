@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test App Auth</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test App Authentication</h1>
+    <button id="testBtn">Test App Auth Flow</button>
+    <div id="result"></div>
+
+    <script>
+        const supabaseUrl = 'http://127.0.0.1:54321';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Test 1: Check current session
+                resultDiv.innerHTML += 'Step 1: Checking current session...<br>';
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError) {
+                    resultDiv.innerHTML += `Session error: ${sessionError.message}<br>`;
+                } else if (session?.user) {
+                    resultDiv.innerHTML += `Current session: User ID ${session.user.id}<br>`;
+                } else {
+                    resultDiv.innerHTML += 'No current session<br>';
+                }
+                
+                // Test 2: Sign in anonymously
+                resultDiv.innerHTML += '<br>Step 2: Signing in anonymously...<br>';
+                const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+                
+                if (authError) {
+                    resultDiv.innerHTML += `Auth Error: ${authError.message}<br>`;
+                    return;
+                }
+                
+                resultDiv.innerHTML += `Auth Success! User ID: ${authData.user.id}<br>`;
+                
+                // Test 3: Check session again
+                resultDiv.innerHTML += '<br>Step 3: Checking session after auth...<br>';
+                const { data: { session: newSession }, error: newSessionError } = await supabase.auth.getSession();
+                
+                if (newSessionError) {
+                    resultDiv.innerHTML += `New session error: ${newSessionError.message}<br>`;
+                } else if (newSession?.user) {
+                    resultDiv.innerHTML += `New session: User ID ${newSession.user.id}<br>`;
+                } else {
+                    resultDiv.innerHTML += 'No new session<br>';
+                }
+                
+                // Test 4: Try to get user cards
+                resultDiv.innerHTML += '<br>Step 4: Getting user cards...<br>';
+                const { data: userCards, error: userCardsError } = await supabase
+                    .from('user_cards_with_content')
+                    .select('*')
+                    .eq('user_id', authData.user.id);
+                
+                if (userCardsError) {
+                    resultDiv.innerHTML += `User cards error: ${userCardsError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `User cards found: ${userCards.length}<br>`;
+                    if (userCards.length > 0) {
+                        resultDiv.innerHTML += `First card: ${JSON.stringify(userCards[0])}<br>`;
+                    }
+                }
+                
+                // Test 5: Add a test card
+                resultDiv.innerHTML += '<br>Step 5: Adding a test card...<br>';
+                const { data: addResult, error: addError } = await supabase.rpc('add_card_to_user_with_lesson', {
+                    p_language_pair_id: 'ru-es',
+                    p_term: 'test',
+                    p_translation: 'тест',
+                    p_image_url: null,
+                    p_english: 'test',
+                    p_lesson_id: 'test',
+                    p_lesson_order: 1
+                });
+                
+                if (addError) {
+                    resultDiv.innerHTML += `Add card error: ${addError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `Add card success: ${JSON.stringify(addResult)}<br>`;
+                }
+                
+                // Test 6: Check user cards again
+                resultDiv.innerHTML += '<br>Step 6: Checking user cards after adding...<br>';
+                const { data: userCardsAfter, error: userCardsAfterError } = await supabase
+                    .from('user_cards_with_content')
+                    .select('*')
+                    .eq('user_id', authData.user.id);
+                
+                if (userCardsAfterError) {
+                    resultDiv.innerHTML += `User cards after error: ${userCardsAfterError.message}<br>`;
+                } else {
+                    resultDiv.innerHTML += `User cards after adding: ${userCardsAfter.length}<br>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `Exception: ${error.message}`;
+                console.error('Exception:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test App Integration</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test App Integration</h1>
+    <button id="testBtn">Test Add Multiple Words</button>
+    <div id="result"></div>
+
+    <script>
+        const supabaseUrl = 'http://127.0.0.1:54321';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Simulate the words from intro lesson
+        const introWords = [
+            { term: 'hola', translation: 'привет', english: 'hello' },
+            { term: 'buenos días', translation: 'доброе утро', english: 'good morning' },
+            { term: 'buenas tardes', translation: 'добрый день', english: 'good afternoon' },
+            { term: 'buenas noches', translation: 'добрый вечер', english: 'good evening' },
+            { term: 'adiós', translation: 'до свидания', english: 'goodbye' },
+            { term: 'hasta luego', translation: 'до встречи', english: 'see you later' },
+            { term: 'gracias', translation: 'спасибо', english: 'thank you' },
+            { term: 'de nada', translation: 'пожалуйста', english: 'you\'re welcome' },
+            { term: 'por favor', translation: 'пожалуйста', english: 'please' },
+            { term: 'lo siento', translation: 'извините', english: 'sorry' },
+            { term: 'perdón', translation: 'простите', english: 'excuse me' },
+            { term: 'sí', translation: 'да', english: 'yes' },
+            { term: 'no', translation: 'нет', english: 'no' },
+            { term: '¿cómo estás?', translation: 'как дела?', english: 'how are you?' },
+            { term: 'muy bien', translation: 'очень хорошо', english: 'very well' },
+            { term: 'mal', translation: 'плохо', english: 'bad' },
+            { term: 'regular', translation: 'нормально', english: 'okay' },
+            { term: '¿y tú?', translation: 'а как ты?', english: 'and you?' }
+        ];
+        
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Sign in anonymously
+                const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+                
+                if (authError) {
+                    resultDiv.innerHTML = `Auth Error: ${authError.message}`;
+                    return;
+                }
+                
+                resultDiv.innerHTML = `Auth Success! User ID: ${authData.user.id}<br>`;
+                
+                let addedCount = 0;
+                let skippedCount = 0;
+                
+                // Add each word individually
+                for (let i = 0; i < introWords.length; i++) {
+                    const word = introWords[i];
+                    const lessonOrder = i + 1;
+                    
+                    try {
+                        const { data, error } = await supabase.rpc('add_card_to_user_with_lesson', {
+                            p_language_pair_id: 'ru-es',
+                            p_term: word.term,
+                            p_translation: word.translation,
+                            p_english: word.english,
+                            p_lesson_id: 'intro',
+                            p_lesson_order: lessonOrder
+                        });
+                        
+                        if (error) {
+                            console.error(`Error adding word "${word.term}":`, error);
+                            skippedCount++;
+                        } else {
+                            console.log(`Added word "${word.term}":`, data);
+                            addedCount++;
+                        }
+                    } catch (error) {
+                        console.error(`Exception adding word "${word.term}":`, error);
+                        skippedCount++;
+                    }
+                }
+                
+                resultDiv.innerHTML += `Added: ${addedCount}, Skipped: ${skippedCount}<br>`;
+                
+                // Check total cards
+                const { data: cards, error: fetchError } = await supabase
+                    .from('user_cards_with_content')
+                    .select('*')
+                    .eq('user_id', authData.user.id)
+                    .eq('lesson_id', 'intro');
+                
+                if (fetchError) {
+                    resultDiv.innerHTML += `Fetch Error: ${fetchError.message}`;
+                } else {
+                    resultDiv.innerHTML += `Total lesson cards: ${cards.length}`;
+                    console.log('Lesson cards:', cards);
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `Exception: ${error.message}`;
+                console.error('Exception:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
