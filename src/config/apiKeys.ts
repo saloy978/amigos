@@ -5,25 +5,25 @@
 
 export const API_KEYS = {
   // OpenAI ChatGPT API - получите на https://platform.openai.com/api-keys
-  OPENAI_API_KEY: import.meta.env.VITE_OPENAI_API_KEY || 'sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  OPENAI_API_KEY: import.meta.env.VITE_OPENAI_API_KEY,
 
   // Hugging Face API - получите на https://huggingface.co/settings/tokens
-  HUGGING_FACE_API_KEY: import.meta.env.VITE_HUGGING_FACE_API_KEY || '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',
+  HUGGING_FACE_API_KEY: import.meta.env.VITE_HUGGING_FACE_API_KEY,
 
   // Cohere API - получите на https://dashboard.cohere.ai/api-keys
-  COHERE_API_KEY: import.meta.env.VITE_COHERE_API_KEY || 'lGYuJlyPVw5jWZewMAGLyXHZ7w1lPe5CeSe1wSij',
+  COHERE_API_KEY: import.meta.env.VITE_COHERE_API_KEY,
 
   // Leonardo.ai API - получите на https://leonardo.ai
-  LEONARDO_API_KEY: import.meta.env.VITE_LEONARDO_API_KEY || '2a9ab5c6-27d8-4d6a-8541-ece719f4cd5b',
+  LEONARDO_API_KEY: import.meta.env.VITE_LEONARDO_API_KEY,
 
   // Google Translate API - получите на https://console.cloud.google.com/apis/credentials
-  GOOGLE_TRANSLATE_API_KEY: import.meta.env.VITE_GOOGLE_TRANSLATE_API_KEY || 'AIzaSyA6XURB2soxZcritvBPtPkBUjKbsNjVJ-U',
+  GOOGLE_TRANSLATE_API_KEY: import.meta.env.VITE_GOOGLE_TRANSLATE_API_KEY,
 
   // Google Gemini API - получите на https://aistudio.google.com/app/apikey
-  GEMINI_API_KEY: import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyCkIv__LSy7yshaIgDkUGn9jucmENWkPtg',
+  GEMINI_API_KEY: import.meta.env.VITE_GEMINI_API_KEY,
 
   // Google Text-to-Speech API - получите на https://console.cloud.google.com/apis/credentials
-  GOOGLE_TTS_API_KEY: import.meta.env.VITE_GOOGLE_TTS_API_KEY || 'AIzaSyBphJBFocsINvoOrnSKEpPpTZlGRIBvY9Y'
+  GOOGLE_TTS_API_KEY: import.meta.env.VITE_GOOGLE_TTS_API_KEY
 };
 
 /**
@@ -70,14 +70,14 @@ export const SERVICE_STATUS = {
 /**
  * Получить API ключ для сервиса
  */
-export function getApiKey(service: keyof typeof API_KEYS): string | null {
+export function getApiKey(service: keyof typeof API_KEYS): string | undefined {
   const key = API_KEYS[service];
-  
-  // Проверяем, что ключ не является placeholder'ом
-  if (key.includes('xxxxxxxx') || key.includes('your-') || key.includes('here')) {
-    return null;
+
+  // Проверяем, что ключ существует и не является placeholder'ом
+  if (!key || key.includes('xxxxxxxx') || key.includes('your-') || key.includes('here')) {
+    return undefined;
   }
-  
+
   return key;
 }
 
